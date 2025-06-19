@@ -1,0 +1,66 @@
+{
+  "name": "@voilajsx/comet",
+  "version": "1.0.0",
+  "description": "Minimal but powerful Chrome extension framework built with React and UIKit",
+  "type": "module",
+  "author": "VoilaJSX",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/voilajsx/comet.git"
+  },
+  "homepage": "https://github.com/voilajsx/comet",
+  "bugs": {
+    "url": "https://github.com/voilajsx/comet/issues"
+  },
+  "keywords": [
+    "chrome-extension",
+    "manifest-v3",
+    "react",
+    "framework",
+    "uikit",
+    "comet",
+    "voilajsx"
+  ],
+  "scripts": {
+    "dev": "npm run build:main -- --watch",
+    "dev:bridge": "npm run build:bridge -- --watch",
+    "dev:all": "concurrently \"npm run dev\" \"npm run dev:bridge\"",
+    "build": "npm run build:main && npm run build:bridge && npm run post-build",
+    "build:main": "vite build",
+    "build:bridge": "vite build --config vite.bridge.config.js",
+    "watch": "npm run dev:all",
+    "preview": "vite preview",
+    "package": "npm run build && cd dist && zip -r ../comet-extension.zip .",
+    "clean": "rm -rf dist && rm -f comet-extension.zip",
+    "post-build": "npm run copy-assets && npm run copy-modules && npm run fix-paths",
+    "copy-assets": "cp manifest.json dist/ && mkdir -p dist/icons && cp public/icons/* dist/icons/ 2>/dev/null || true",
+    "copy-modules": "cp src/scripts/modules-manifest.json dist/ && mkdir -p dist/modules && cp src/scripts/modules/*.js dist/modules/",
+    "fix-paths": "mv dist/src/pages/popup/index.html dist/popup.html 2>/dev/null || true && mv dist/src/pages/options/index.html dist/options.html 2>/dev/null || true && rm -rf dist/src 2>/dev/null || true",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@voilajsx/uikit": "latest",
+    "lucide-react": "^0.516.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.1.10",
+    "@types/chrome": "^0.0.270",
+    "@types/react": "^18.2.15",
+    "@types/react-dom": "^18.2.7",
+    "@types/node": "^20.0.0",
+    "@vitejs/plugin-react": "^4.5.2",
+    "concurrently": "^8.2.2",
+    "typescript": "^5.0.2",
+    "vite": "^6.3.5"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  },
+  "browserslist": [
+    "Chrome >= 88"
+  ]
+}

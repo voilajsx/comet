@@ -1,0 +1,22 @@
+{
+  "app": {
+    "name": "Comet Extension",
+    "theme": "metro",
+    "variant": "light"
+  },
+  "auth": {
+    "module": "userAuth",
+    "autoLogin": true,
+    "sessionDays": 7,
+    "rememberLogin": true
+  },
+  "features": {
+    "auth": true,
+    "notifications": true
+  },
+  "ui": {
+    "size": "lg",
+    "animations": true
+  },
+  "extensionEnabled": true
+}
