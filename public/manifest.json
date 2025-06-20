@@ -2,18 +2,47 @@
   "manifest_version": 3,
   "name": "Comet Extension",
   "version": "1.0.0",
-  "description": "Browser extension built with Comet Framework",
-  "author": "VoilaJSX",
+  "description": "Minimal but powerful Chrome extension framework built with React and UIKit",
 
-  "action": {
-    "default_popup": "popup.html",
-    "default_title": "Comet Extension"
-  },
+  "permissions": [
+    "storage",
+    "tabs",
+    "activeTab",
+    "scripting",
+    "background",
+    "bookmarks",
+    "contextMenus",
+    "downloads"
+  ],
+
+  "host_permissions": ["<all_urls>"],
 
   "background": {
     "service_worker": "background.js",
     "type": "module"
   },
+
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["bridge.js"],
+      "run_at": "document_start",
+      "all_frames": false
+    }
+  ],
+
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Comet Extension",
+    "default_icon": {
+      "16": "icons/icon-16.png",
+      "32": "icons/icon-32.png",
+      "48": "icons/icon-48.png",
+      "128": "icons/icon-128.png"
+    }
+  },
+
+  "options_page": "options.html",
 
   "icons": {
     "16": "icons/icon-16.png",
@@ -22,32 +51,10 @@
     "128": "icons/icon-128.png"
   },
 
-  "content_scripts": [
-    {
-      "matches": ["https://*/*", "http://*/*"],
-      "js": ["bridge.js"],
-      "run_at": "document_idle"
-    }
-  ],
-
-  "options_page": "options.html",
-
-  "permissions": ["storage", "activeTab"],
-
-  "optional_permissions": ["notifications", "contextMenus"],
-
-  "host_permissions": ["https://*/*"],
-
   "web_accessible_resources": [
     {
-      "resources": ["modules-manifest.json", "modules/*.js"],
-      "matches": ["https://*/*", "http://*/*"]
+      "resources": ["modules/*"],
+      "matches": ["<all_urls>"]
     }
-  ],
-
-  "content_security_policy": {
-    "extension_pages": "script-src 'self'; object-src 'self';"
-  },
-
-  "minimum_chrome_version": "88"
+  ]
 }

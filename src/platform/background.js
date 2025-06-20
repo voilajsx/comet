@@ -1,7 +1,5 @@
 /**
- * Comet Extension Background Script (Cross-Browser Service Worker)
- * Handles extension lifecycle, message routing, and coordination
- * Works with Chrome, Firefox, Edge, Opera, Brave, and other WebExtension browsers
+ * Comet Extension Background Script (Complete Fix for Tabs API)
  * @module @voilajsx/comet
  * @file src/platform/background.js
  */
@@ -12,17 +10,16 @@ import { messaging } from './messaging.js';
 // Cross-browser API detection
 const browserAPI = (() => {
   if (typeof browser !== 'undefined') {
-    return browser; // Firefox, newer browsers
+    return browser;
   } else if (typeof chrome !== 'undefined') {
-    return chrome; // Chrome, Edge, Opera, Brave
+    return chrome;
   } else {
     throw new Error('No browser extension API available');
   }
 })();
 
 /**
- * Comet Background Manager
- * Handles all extension background functionality without app-specific logic
+ * Comet Background Manager with Fixed Tabs API
  */
 class CometBackgroundManager {
   constructor() {
@@ -37,9 +34,6 @@ class CometBackgroundManager {
     this.initialize();
   }
 
-  /**
-   * Setup all browser extension event listeners
-   */
   setupEventListeners() {
     // Extension lifecycle events
     this.api.runtime.onInstalled.addListener((details) => {
@@ -50,13 +44,13 @@ class CometBackgroundManager {
       this.handleStartup();
     });
 
-    // Message handling (universal routing)
+    // Message handling
     this.api.runtime.onMessage.addListener((message, sender, sendResponse) => {
       this.handleMessage(message, sender, sendResponse);
       return true; // Keep message channel open for async responses
     });
 
-    // Tab events (if app needs them)
+    // Tab events
     this.api.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
       this.emitEvent('tabUpdated', { tabId, changeInfo, tab });
     });
@@ -70,7 +64,7 @@ class CometBackgroundManager {
       this.emitEvent('storageChanged', { changes, namespace });
     });
 
-    // Action (icon) click events
+    // Action click events
     if (this.api.action && this.api.action.onClicked) {
       this.api.action.onClicked.addListener((tab) => {
         this.emitEvent('actionClicked', { tab });
@@ -78,9 +72,6 @@ class CometBackgroundManager {
     }
   }
 
-  /**
-   * Initialize background service worker
-   */
   async initialize() {
     if (this.isInitialized) return;
 
@@ -89,18 +80,12 @@ class CometBackgroundManager {
     );
 
     try {
-      // Load app configuration
       await this.loadAppConfig();
-
-      // Setup default message handlers
       this.setupDefaultHandlers();
-
-      // Emit initialization event for app
       this.emitEvent('backgroundReady', {
         version: this.version,
         extensionId: this.extensionId,
       });
-
       this.isInitialized = true;
     } catch (error) {
       console.error(
@@ -110,16 +95,10 @@ class CometBackgroundManager {
     }
   }
 
-  /**
-   * Load app-specific configuration
-   */
   async loadAppConfig() {
     try {
-      // Try to load app config from storage or import
       const config = await storage.get('appConfig');
       this.appConfig = config || {};
-
-      // Setup app-specific handlers if config exists
       if (this.appConfig.messageHandlers) {
         this.registerMessageHandlers(this.appConfig.messageHandlers);
       }
@@ -129,9 +108,6 @@ class CometBackgroundManager {
     }
   }
 
-  /**
-   * Setup default universal message handlers
-   */
   setupDefaultHandlers() {
     // Storage operations
     this.registerMessageHandler('storage.get', async (data) => {
@@ -150,17 +126,146 @@ class CometBackgroundManager {
       return await storage.clear();
     });
 
-    // Tab operations
+    // ✅ FIXED: Tabs operations with correct response format
+    this.registerMessageHandler('tabs.create', async (data) => {
+      try {
+        console.log('[Comet Platform] Creating tab with data:', data);
+
+        const createOptions = {
+          url: data.url || 'about:blank',
+          active: data.active !== false, // Default to true unless explicitly false
+        };
+
+        // Add optional properties if provided
+        if (data.windowId) createOptions.windowId = data.windowId;
+        if (data.index !== undefined) createOptions.index = data.index;
+        if (data.pinned !== undefined) createOptions.pinned = data.pinned;
+
+        const tab = await this.api.tabs.create(createOptions);
+
+        console.log('[Comet Platform] Tab created successfully:', tab);
+        return { success: true, tab };
+      } catch (error) {
+        console.error('[Comet Platform] Tab creation failed:', error);
+        return { success: false, error: error.message };
+      }
+    });
+
+    this.registerMessageHandler('tabs.query', async (data) => {
+      try {
+        console.log('[Comet Platform] Querying tabs with:', data);
+
+        const queryOptions = data || {};
+        const tabs = await this.api.tabs.query(queryOptions);
+
+        console.log('[Comet Platform] Query returned', tabs.length, 'tabs');
+
+        // ✅ CRITICAL FIX: Return tabs directly in data field, not wrapped
+        return tabs; // This is what was wrong - we were returning { success: true, data: tabs }
+      } catch (error) {
+        console.error('[Comet Platform] Tab query failed:', error);
+        throw error; // Let the framework handle the error wrapping
+      }
+    });
+
     this.registerMessageHandler('tabs.getCurrent', async () => {
-      const [tab] = await this.api.tabs.query({
-        active: true,
-        currentWindow: true,
-      });
-      return tab;
+      try {
+        console.log('[Comet Platform] Getting current tab');
+
+        const tabs = await this.api.tabs.query({
+          active: true,
+          currentWindow: true,
+        });
+
+        const currentTab = tabs[0] || null;
+        console.log('[Comet Platform] Current tab:', currentTab);
+
+        return currentTab;
+      } catch (error) {
+        console.error('[Comet Platform] Get current tab failed:', error);
+        throw error;
+      }
+    });
+
+    this.registerMessageHandler('tabs.update', async (data) => {
+      try {
+        console.log('[Comet Platform] Updating tab:', data);
+
+        const updateOptions = {};
+        if (data.url) updateOptions.url = data.url;
+        if (data.active !== undefined) updateOptions.active = data.active;
+        if (data.pinned !== undefined) updateOptions.pinned = data.pinned;
+        if (data.muted !== undefined) updateOptions.muted = data.muted;
+
+        const tab = await this.api.tabs.update(data.tabId, updateOptions);
+
+        console.log('[Comet Platform] Tab updated:', tab);
+        return { success: true, tab };
+      } catch (error) {
+        console.error('[Comet Platform] Tab update failed:', error);
+        return { success: false, error: error.message };
+      }
+    });
+
+    this.registerMessageHandler('tabs.remove', async (data) => {
+      try {
+        console.log('[Comet Platform] Removing tabs:', data);
+
+        const tabIds = Array.isArray(data.tabIds) ? data.tabIds : [data.tabId];
+        await this.api.tabs.remove(tabIds);
+
+        console.log('[Comet Platform] Tabs removed successfully');
+        return { success: true, removedCount: tabIds.length };
+      } catch (error) {
+        console.error('[Comet Platform] Tab removal failed:', error);
+        return { success: false, error: error.message };
+      }
+    });
+
+    this.registerMessageHandler('tabs.duplicate', async (data) => {
+      try {
+        console.log('[Comet Platform] Duplicating tab:', data.tabId);
+
+        const tab = await this.api.tabs.duplicate(data.tabId);
+
+        console.log('[Comet Platform] Tab duplicated:', tab);
+        return { success: true, tab };
+      } catch (error) {
+        console.error('[Comet Platform] Tab duplication failed:', error);
+        return { success: false, error: error.message };
+      }
+    });
+
+    this.registerMessageHandler('tabs.reload', async (data) => {
+      try {
+        console.log('[Comet Platform] Reloading tab:', data);
+
+        const reloadOptions = {};
+        if (data.bypassCache !== undefined)
+          reloadOptions.bypassCache = data.bypassCache;
+
+        await this.api.tabs.reload(data.tabId, reloadOptions);
+
+        console.log('[Comet Platform] Tab reloaded successfully');
+        return { success: true };
+      } catch (error) {
+        console.error('[Comet Platform] Tab reload failed:', error);
+        return { success: false, error: error.message };
+      }
     });
 
     this.registerMessageHandler('tabs.sendMessage', async (data) => {
-      return await messaging.sendToTab(data.tabId, data.message);
+      try {
+        console.log('[Comet Platform] Sending message to tab:', data.tabId);
+
+        const response = await messaging.sendToTab(data.tabId, data.message);
+
+        console.log('[Comet Platform] Message sent to tab successfully');
+        return response;
+      } catch (error) {
+        console.error('[Comet Platform] Send message to tab failed:', error);
+        throw error;
+      }
     });
 
     // Extension info
@@ -181,17 +286,90 @@ class CometBackgroundManager {
       return await this.setBadgeColor(data.color, data.tabId);
     });
 
+    // Bookmarks operations
+    this.registerMessageHandler('bookmarks.create', async (data) => {
+      try {
+        console.log('[Comet Platform] Creating bookmark:', data);
+
+        const bookmark = await this.api.bookmarks.create({
+          title: data.title,
+          url: data.url,
+          parentId: data.parentId,
+        });
+
+        console.log('[Comet Platform] Bookmark created:', bookmark);
+        return { success: true, bookmark };
+      } catch (error) {
+        console.error('[Comet Platform] Bookmark creation failed:', error);
+        return { success: false, error: error.message };
+      }
+    });
+
+    // Context menu operations
+    this.registerMessageHandler('contextMenu.create', async (data) => {
+      try {
+        console.log('[Comet Platform] Creating context menu:', data);
+
+        await this.api.contextMenus.create({
+          id: data.id,
+          title: data.title,
+          contexts: data.contexts || ['page'],
+        });
+
+        console.log('[Comet Platform] Context menu created successfully');
+        return { success: true };
+      } catch (error) {
+        console.error('[Comet Platform] Context menu creation failed:', error);
+        return { success: false, error: error.message };
+      }
+    });
+
+    this.registerMessageHandler('contextMenu.remove', async (data) => {
+      try {
+        console.log('[Comet Platform] Removing context menu:', data.id);
+
+        await this.api.contextMenus.remove(data.id);
+
+        console.log('[Comet Platform] Context menu removed successfully');
+        return { success: true };
+      } catch (error) {
+        console.error('[Comet Platform] Context menu removal failed:', error);
+        return { success: false, error: error.message };
+      }
+    });
+
+    // Downloads operations
+    this.registerMessageHandler('downloads.downloadData', async (data) => {
+      try {
+        console.log('[Comet Platform] Starting download:', data.filename);
+
+        const blob = new Blob([data.data], {
+          type: data.mimeType || 'text/plain',
+        });
+        const url = URL.createObjectURL(blob);
+
+        const downloadId = await this.api.downloads.download({
+          url: url,
+          filename: data.filename || 'download.txt',
+        });
+
+        // Clean up blob URL after a delay
+        setTimeout(() => URL.revokeObjectURL(url), 10000);
+
+        console.log('[Comet Platform] Download started:', downloadId);
+        return { success: true, downloadId };
+      } catch (error) {
+        console.error('[Comet Platform] Download failed:', error);
+        return { success: false, error: error.message };
+      }
+    });
+
     // Universal API proxy handler
     this.registerMessageHandler('api.fetch', async (data) => {
       return await this.universalApiFetch(data);
     });
   }
 
-  /**
-   * Universal API fetch method - handles all external API calls
-   * @param {object} data - Request configuration
-   * @returns {object} Response data
-   */
   async universalApiFetch({
     url,
     method = 'GET',
@@ -206,40 +384,31 @@ class CometBackgroundManager {
       const fetchOptions = {
         method: method.toUpperCase(),
         headers: {
-          // Only add Content-Type for requests with body
           ...(body && ['POST', 'PUT', 'PATCH'].includes(method.toUpperCase())
             ? { 'Content-Type': 'application/json' }
             : {}),
-          ...headers, // Custom headers override defaults
+          ...headers,
         },
         signal: controller.signal,
       };
 
-      // Only add body for methods that support it
       if (body && ['POST', 'PUT', 'PATCH'].includes(method.toUpperCase())) {
         fetchOptions.body = JSON.stringify(body);
       }
 
-      console.log(`[Comet API] ${method.toUpperCase()} ${url}`, {
-        headers: fetchOptions.headers,
-        body: fetchOptions.body ? JSON.parse(fetchOptions.body) : null,
-      });
+      console.log(`[Comet API] ${method.toUpperCase()} ${url}`);
 
       const response = await fetch(url, fetchOptions);
-
       clearTimeout(timeoutId);
 
       let data;
       const contentType = response.headers.get('content-type');
 
       try {
-        // Handle JSON responses
         if (contentType && contentType.includes('application/json')) {
           data = await response.json();
         } else {
-          // Handle text responses
           data = await response.text();
-          // Try to parse as JSON if it looks like JSON
           if (data.trim().startsWith('{') || data.trim().startsWith('[')) {
             try {
               data = JSON.parse(data);
@@ -261,21 +430,9 @@ class CometBackgroundManager {
         headers: Object.fromEntries(response.headers.entries()),
       };
 
-      console.log(`[Comet API] Response:`, {
-        status: result.status,
-        success: result.success,
-        dataType: typeof result.data,
-        hasData: !!result.data,
-      });
-
       return result;
     } catch (error) {
-      console.error(`[Comet API] Request failed:`, {
-        url,
-        method,
-        error: error.message,
-        isTimeout: error.name === 'AbortError',
-      });
+      console.error(`[Comet API] Request failed:`, error);
 
       return {
         success: false,
@@ -288,9 +445,6 @@ class CometBackgroundManager {
     }
   }
 
-  /**
-   * Handle extension installation/update
-   */
   async handleInstallation(details) {
     console.log(`[Comet Platform] Installation event: ${details.reason}`);
 
@@ -315,20 +469,14 @@ class CometBackgroundManager {
           break;
       }
 
-      // Emit event for app to handle
       this.emitEvent('installed', installationData);
     } catch (error) {
       console.error('[Comet Platform] Installation handling failed:', error);
     }
   }
 
-  /**
-   * Handle first installation
-   */
   async handleFirstInstall() {
     console.log('[Comet Platform] First installation');
-
-    // Store installation info
     await storage.set({
       installDate: Date.now(),
       version: this.version,
@@ -336,15 +484,10 @@ class CometBackgroundManager {
     });
   }
 
-  /**
-   * Handle extension update
-   */
   async handleUpdate(previousVersion) {
     console.log(
       `[Comet Platform] Updated from ${previousVersion} to ${this.version}`
     );
-
-    // Store update info
     await storage.set({
       lastUpdate: Date.now(),
       version: this.version,
@@ -352,25 +495,15 @@ class CometBackgroundManager {
     });
   }
 
-  /**
-   * Handle browser update
-   */
   async handleBrowserUpdate() {
     console.log('[Comet Platform] Browser updated');
-    // No special handling needed, just log
   }
 
-  /**
-   * Handle extension startup
-   */
   async handleStartup() {
     console.log('[Comet Platform] Extension startup');
     this.emitEvent('startup', { timestamp: Date.now() });
   }
 
-  /**
-   * Universal message handler - routes messages to registered handlers
-   */
   async handleMessage(message, sender, sendResponse) {
     try {
       const { type, data, id } = message;
@@ -382,10 +515,8 @@ class CometBackgroundManager {
 
       console.log(`[Comet Platform] Message received: ${type}`, data);
 
-      // Check if handler exists
       const handler = this.messageHandlers.get(type);
       if (!handler) {
-        // Emit event for app to handle unknown messages
         const result = await this.emitEvent('message', { type, data, sender });
         sendResponse(
           result || {
@@ -399,6 +530,8 @@ class CometBackgroundManager {
 
       // Execute handler
       const result = await handler(data, sender);
+
+      // ✅ CRITICAL FIX: Always wrap in success response format
       sendResponse({
         success: true,
         data: result,
@@ -414,25 +547,16 @@ class CometBackgroundManager {
     }
   }
 
-  /**
-   * Register a message handler
-   */
   registerMessageHandler(type, handler) {
     this.messageHandlers.set(type, handler);
   }
 
-  /**
-   * Register multiple message handlers
-   */
   registerMessageHandlers(handlers) {
     Object.entries(handlers).forEach(([type, handler]) => {
       this.registerMessageHandler(type, handler);
     });
   }
 
-  /**
-   * Register event listener
-   */
   addEventListener(event, listener) {
     if (!this.eventListeners.has(event)) {
       this.eventListeners.set(event, []);
@@ -440,14 +564,10 @@ class CometBackgroundManager {
     this.eventListeners.get(event).push(listener);
   }
 
-  /**
-   * Emit event to registered listeners
-   */
   async emitEvent(event, data) {
     const listeners = this.eventListeners.get(event) || [];
 
     if (listeners.length === 0) {
-      // No listeners, but log for debugging
       console.log(`[Comet Platform] Event emitted: ${event}`, data);
       return null;
     }
@@ -467,9 +587,6 @@ class CometBackgroundManager {
     return lastResult;
   }
 
-  /**
-   * Set badge text (cross-browser compatible)
-   */
   async setBadgeText(text, tabId = null) {
     try {
       if (!this.api.action) {
@@ -488,9 +605,6 @@ class CometBackgroundManager {
     }
   }
 
-  /**
-   * Set badge background color (cross-browser compatible)
-   */
   async setBadgeColor(color, tabId = null) {
     try {
       if (!this.api.action) {
@@ -509,9 +623,6 @@ class CometBackgroundManager {
     }
   }
 
-  /**
-   * Get extension info
-   */
   getExtensionInfo() {
     return {
       id: this.extensionId,
@@ -522,9 +633,6 @@ class CometBackgroundManager {
     };
   }
 
-  /**
-   * Get browser information
-   */
   getBrowserInfo() {
     if (typeof browser !== 'undefined') {
       return { type: 'firefox', api: 'browser' };
@@ -538,8 +646,6 @@ class CometBackgroundManager {
 // Initialize the Comet background manager
 const backgroundManager = new CometBackgroundManager();
 
-// Export for app usage (if needed)
+// Export for app usage
 globalThis.backgroundManager = backgroundManager;
-
-// Export background manager
 export { backgroundManager };

@@ -1,5 +1,5 @@
 /**
- * Comet Framework - Universal Script Bridge (Static Imports)
+ * Comet Framework - Universal Script Bridge (Fixed - No Duplicate Handlers)
  * Simple and reliable - no CSP issues, easy to add modules
  * @module @voilajsx/comet
  * @file src/scripts/bridge.js
@@ -11,6 +11,7 @@
 import pageAnalyzer from './modules/pageAnalyzer.js';
 import quoteGenerator from './modules/quoteGenerator.js';
 import userAuth from './modules/userAuth.js';
+import tester from './modules/tester.js';
 // import newModule from './modules/newModule.js';           // <-- Add new imports here
 // import anotherModule from './modules/anotherModule.js';   // <-- Add new imports here
 
@@ -21,6 +22,7 @@ const ALL_MODULES = [
   pageAnalyzer,
   quoteGenerator,
   userAuth,
+  tester,
   // newModule,        // <-- Add new modules here
   // anotherModule,    // <-- Add new modules here
 ];
@@ -40,6 +42,7 @@ class CometScriptBridge {
     this.messageHandlers = new Map();
     this.moduleRegistry = new Map();
     this.moduleLoadStrategy = 'static-imports';
+    this.coreHandlers = new Set(); // ✅ ADD: Track core handlers
 
     this.initialize();
   }
@@ -81,7 +84,8 @@ class CometScriptBridge {
   }
 
   registerCoreHandlers() {
-    this.registerHandler('ping', () => ({
+    // ✅ FIXED: Mark these as core handlers and register them properly
+    this.registerCoreHandler('ping', () => ({
       success: true,
       ready: true,
       url: window.location.href,
@@ -91,22 +95,35 @@ class CometScriptBridge {
       loadStrategy: this.moduleLoadStrategy,
     }));
 
-    this.registerHandler('getPageInfo', () => ({
+    this.registerCoreHandler('getPageInfo', () => ({
       url: window.location.href,
       title: document.title,
       hostname: window.location.hostname,
       timestamp: Date.now(),
     }));
 
-    this.registerHandler('getModules', () => ({
+    this.registerCoreHandler('getModules', () => ({
       modules: Array.from(this.modules.keys()),
       handlers: Array.from(this.messageHandlers.keys()),
       moduleCount: this.modules.size,
     }));
 
-    this.registerHandler('performMainAction', (data) =>
+    this.registerCoreHandler('performMainAction', (data) =>
       this.performCombinedAction(data)
     );
+  }
+
+  // ✅ NEW: Separate method for core handlers
+  registerCoreHandler(type, handler) {
+    if (typeof handler !== 'function') {
+      throw new Error(`Core handler for "${type}" must be a function`);
+    }
+
+    this.coreHandlers.add(type);
+    this.messageHandlers.set(type, handler);
+    this.moduleRegistry.set(type, 'core');
+
+    console.log(`[Comet Bridge] Core handler "${type}" registered`);
   }
 
   loadStaticModules() {
@@ -150,6 +167,23 @@ class CometScriptBridge {
         Object.entries(moduleConfig.handlers).forEach(
           ([handlerName, handlerFunc]) => {
             if (typeof handlerFunc === 'function') {
+              // ✅ FIXED: Check for conflicts with core handlers
+              if (this.coreHandlers.has(handlerName)) {
+                console.warn(
+                  `[Comet Bridge] Module "${name}" tried to register core handler "${handlerName}", skipping`
+                );
+                return;
+              }
+
+              // ✅ FIXED: Check for conflicts with other modules
+              if (this.messageHandlers.has(handlerName)) {
+                const existingModule = this.moduleRegistry.get(handlerName);
+                console.warn(
+                  `[Comet Bridge] Handler "${handlerName}" conflict: Module "${name}" vs existing "${existingModule}", skipping`
+                );
+                return;
+              }
+
               this.registerHandler(handlerName, handlerFunc);
               this.moduleRegistry.set(handlerName, name);
             }
@@ -182,17 +216,13 @@ class CometScriptBridge {
     );
   }
 
+  // ✅ FIXED: Only register non-conflicting handlers
   registerHandler(type, handler) {
     if (typeof handler !== 'function') {
       throw new Error(`Handler for "${type}" must be a function`);
     }
 
-    if (this.messageHandlers.has(type)) {
-      console.warn(
-        `[Comet Bridge] Handler "${type}" already exists, overriding`
-      );
-    }
-
+    // Don't log override warnings anymore since we prevent them above
     this.messageHandlers.set(type, handler);
   }
 
@@ -299,6 +329,25 @@ class CometScriptBridge {
       console.warn('[Comet Bridge] Failed to notify background:', error);
     }
   }
+
+  // ✅ NEW: Debug method to show handler conflicts
+  getHandlerInfo() {
+    const info = {
+      totalHandlers: this.messageHandlers.size,
+      coreHandlers: Array.from(this.coreHandlers),
+      moduleHandlers: {},
+      allHandlers: Array.from(this.messageHandlers.keys()),
+    };
+
+    for (const [handler, module] of this.moduleRegistry) {
+      if (!info.moduleHandlers[module]) {
+        info.moduleHandlers[module] = [];
+      }
+      info.moduleHandlers[module].push(handler);
+    }
+
+    return info;
+  }
 }
 
 // Initialize the universal bridge
@@ -307,4 +356,9 @@ const scriptBridge = new CometScriptBridge();
 // Export for debugging
 if (typeof globalThis !== 'undefined') {
   globalThis.scriptBridge = scriptBridge;
+
+  // ✅ NEW: Add debug helper
+  globalThis.debugHandlers = () => {
+    console.table(scriptBridge.getHandlerInfo());
+  };
 }

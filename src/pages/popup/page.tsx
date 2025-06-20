@@ -10,7 +10,7 @@ import { ThemeProvider } from '@voilajsx/uikit/theme-provider';
 import { PopupLayout } from '@voilajsx/uikit/popup';
 import { Tabs, TabsList, TabsTrigger } from '@voilajsx/uikit/tabs';
 import { Button } from '@voilajsx/uikit/button';
-import { Settings, User, FileText, Quote, AlertTriangle } from 'lucide-react';
+import { Settings, User, FileText, Quote, AlertTriangle, TestTube } from 'lucide-react';
 
 // Import Comet framework utilities
 import { storage } from '@voilajsx/comet/storage';
@@ -23,6 +23,7 @@ import AuthProvider from '@/components/auth/AuthProvider';
 import AccountTab from '@/components/popup/AccountTab';
 import PageAnalyzerTab from '@/components/popup/PageAnalyzerTab';
 import QuoteGeneratorTab from '@/components/popup/QuoteGeneratorTab';
+import TestTab from '@/components/popup/TestTab';
 
 // Import reusable components
 import ExtensionLogo from '@/components/ExtensionLogo';
@@ -40,6 +41,7 @@ function PopupContent() {
     pageAnalyzerEnabled: true,
     quoteGeneratorEnabled: true,
     authenticationEnabled: true,
+    testingEnabled: true, // Add testing feature flag
   });
 
   /**
@@ -66,11 +68,13 @@ function PopupContent() {
       const pageAnalyzerEnabled = await storage.get('pageAnalyzerEnabled', true);
       const quoteGeneratorEnabled = await storage.get('quoteGeneratorEnabled', true);
       const authenticationEnabled = await storage.get('authenticationEnabled', true);
+      const testingEnabled = await storage.get('testingEnabled', true);
       
       setFeatureSettings({
         pageAnalyzerEnabled,
         quoteGeneratorEnabled,
         authenticationEnabled,
+        testingEnabled,
       });
 
       // Load last active tab, but ensure it's enabled
@@ -83,11 +87,14 @@ function PopupContent() {
         defaultTab = 'quotes';
       } else if (lastTab === 'account' && authenticationEnabled) {
         defaultTab = 'account';
+      } else if (lastTab === 'test' && testingEnabled) {
+        defaultTab = 'test';
       } else {
         // Find first available tab
         if (pageAnalyzerEnabled) defaultTab = 'analyzer';
         else if (authenticationEnabled) defaultTab = 'account';
         else if (quoteGeneratorEnabled) defaultTab = 'quotes';
+        else if (testingEnabled) defaultTab = 'test';
       }
       
       setActiveTab(defaultTab);
@@ -129,6 +136,9 @@ function PopupContent() {
   }
   if (featureSettings.quoteGeneratorEnabled) {
     availableTabs.push({ value: 'quotes', label: 'Quotes', icon: Quote });
+  }
+  if (featureSettings.testingEnabled) {
+    availableTabs.push({ value: 'test', label: 'Test', icon: TestTube });
   }
 
   // Extension logo component
@@ -250,6 +260,10 @@ function PopupContent() {
           
           {featureSettings.quoteGeneratorEnabled && (
             <QuoteGeneratorTab value="quotes" />
+          )}
+
+          {featureSettings.testingEnabled && (
+            <TestTab value="test" />
           )}
         </Tabs>
 
