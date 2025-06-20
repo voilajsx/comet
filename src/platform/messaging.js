@@ -1,7 +1,6 @@
 /**
- * Comet Extension Messaging Utility (Cross-Browser)
- * Provides clean interface for browser messaging between extension components
- * Works with Chrome, Firefox, Edge, Opera, Brave, and other WebExtension browsers
+ * Comet Framework - Essential Messaging Utility (Cross-Browser)
+ * Simple message passing between extension components
  * @module @voilajsx/comet
  * @file src/platform/messaging.js
  */
@@ -18,41 +17,45 @@ const browserAPI = (() => {
 })();
 
 /**
- * Comet Messaging Manager
- * Handles all browser extension messaging with error handling and retry logic
+ * Essential Comet Messaging Manager
+ * Simple and reliable message passing
  */
 class CometMessagingManager {
   constructor() {
     this.api = browserAPI;
     this.messageId = 0;
-    this.pendingMessages = new Map();
-    this.messageTimeout = 30000; // 30 seconds default timeout
-    this.retryAttempts = 3;
-    this.retryDelay = 1000; // 1 second
+    this.messageTimeout = 10000; // 10 seconds
   }
 
   /**
-   * Send message to background script
+   * Send message to service worker (background script)
    * @param {object} message - Message object
-   * @param {object} [options={}] - Options (timeout, retries)
-   * @returns {Promise<object>} Response from background
+   * @returns {Promise<object>} Response from service worker
    */
-  async sendToBackground(message, options = {}) {
+  async sendToBackground(message) {
     try {
       const messageWithId = this.createMessage(message);
-      const timeout = options.timeout || this.messageTimeout;
-      const retries = options.retries || this.retryAttempts;
 
-      return await this.retryOperation(
-        () => this.sendRuntimeMessage(messageWithId, timeout),
-        retries,
-        'background script'
-      );
+      return await new Promise((resolve, reject) => {
+        const timeoutId = setTimeout(() => {
+          reject(new Error('Message timeout'));
+        }, this.messageTimeout);
+
+        this.api.runtime.sendMessage(messageWithId, (response) => {
+          clearTimeout(timeoutId);
+
+          if (this.api.runtime.lastError) {
+            reject(new Error(this.api.runtime.lastError.message));
+            return;
+          }
+
+          resolve(response || { success: false, error: 'No response' });
+        });
+      });
     } catch (error) {
       console.error('[Comet Messaging] Background message failed:', error);
-      throw new CometMessagingError(
-        'Failed to communicate with background script',
-        error
+      throw new Error(
+        'Failed to communicate with service worker: ' + error.message
       );
     }
   }
@@ -61,30 +64,37 @@ class CometMessagingManager {
    * Send message to content script in active tab
    * @param {object} message - Message object
    * @param {number} [tabId] - Specific tab ID (defaults to active tab)
-   * @param {object} [options={}] - Options (timeout, retries)
    * @returns {Promise<object>} Response from content script
    */
-  async sendToContent(message, tabId = null, options = {}) {
+  async sendToContent(message, tabId = null) {
     try {
       const targetTabId = tabId || (await this.getActiveTabId());
       const messageWithId = this.createMessage(message);
-      const timeout = options.timeout || this.messageTimeout;
-      const retries = options.retries || this.retryAttempts;
 
       if (!targetTabId) {
         throw new Error('No active tab found');
       }
 
-      return await this.retryOperation(
-        () => this.sendTabMessage(targetTabId, messageWithId, timeout),
-        retries,
-        `content script (tab ${targetTabId})`
-      );
+      return await new Promise((resolve, reject) => {
+        const timeoutId = setTimeout(() => {
+          reject(new Error('Message timeout'));
+        }, this.messageTimeout);
+
+        this.api.tabs.sendMessage(targetTabId, messageWithId, (response) => {
+          clearTimeout(timeoutId);
+
+          if (this.api.runtime.lastError) {
+            reject(new Error(this.api.runtime.lastError.message));
+            return;
+          }
+
+          resolve(response || { success: false, error: 'No response' });
+        });
+      });
     } catch (error) {
       console.error('[Comet Messaging] Content script message failed:', error);
-      throw new CometMessagingError(
-        'Failed to communicate with content script',
-        error
+      throw new Error(
+        'Failed to communicate with content script: ' + error.message
       );
     }
   }
@@ -93,67 +103,33 @@ class CometMessagingManager {
    * Send message to specific tab
    * @param {number} tabId - Tab ID
    * @param {object} message - Message object
-   * @param {object} [options={}] - Options (timeout, retries)
    * @returns {Promise<object>} Response from tab
    */
-  async sendToTab(tabId, message, options = {}) {
+  async sendToTab(tabId, message) {
     try {
       const messageWithId = this.createMessage(message);
-      const timeout = options.timeout || this.messageTimeout;
-      const retries = options.retries || this.retryAttempts;
 
-      return await this.retryOperation(
-        () => this.sendTabMessage(tabId, messageWithId, timeout),
-        retries,
-        `tab ${tabId}`
-      );
+      return await new Promise((resolve, reject) => {
+        const timeoutId = setTimeout(() => {
+          reject(new Error('Message timeout'));
+        }, this.messageTimeout);
+
+        this.api.tabs.sendMessage(tabId, messageWithId, (response) => {
+          clearTimeout(timeoutId);
+
+          if (this.api.runtime.lastError) {
+            reject(new Error(this.api.runtime.lastError.message));
+            return;
+          }
+
+          resolve(response || { success: false, error: 'No response' });
+        });
+      });
     } catch (error) {
       console.error('[Comet Messaging] Tab message failed:', error);
-      throw new CometMessagingError(
-        `Failed to communicate with tab ${tabId}`,
-        error
+      throw new Error(
+        `Failed to communicate with tab ${tabId}: ` + error.message
       );
-    }
-  }
-
-  /**
-   * Broadcast message to all tabs with content scripts
-   * @param {object} message - Message object
-   * @param {object} [options={}] - Options (timeout, retries)
-   * @returns {Promise<array>} Array of responses from all tabs
-   */
-  async broadcast(message, options = {}) {
-    try {
-      const tabs = await this.api.tabs.query({});
-      const messageWithId = this.createMessage(message);
-      const responses = [];
-
-      for (const tab of tabs) {
-        try {
-          const response = await this.sendToTab(tab.id, messageWithId, {
-            ...options,
-            retries: 1, // Lower retries for broadcast
-          });
-          responses.push({
-            tabId: tab.id,
-            url: tab.url,
-            success: true,
-            response,
-          });
-        } catch (error) {
-          responses.push({
-            tabId: tab.id,
-            url: tab.url,
-            success: false,
-            error: error.message,
-          });
-        }
-      }
-
-      return responses;
-    } catch (error) {
-      console.error('[Comet Messaging] Broadcast failed:', error);
-      throw new CometMessagingError('Failed to broadcast message', error);
     }
   }
 
@@ -265,6 +241,14 @@ class CometMessagingManager {
   }
 
   /**
+   * Set global message timeout
+   * @param {number} timeout - Timeout in milliseconds
+   */
+  setTimeout(timeout) {
+    this.messageTimeout = timeout;
+  }
+
+  /**
    * Create message with unique ID and timestamp
    * @private
    */
@@ -275,111 +259,10 @@ class CometMessagingManager {
       ...message,
     };
   }
-
-  /**
-   * Send runtime message with timeout
-   * @private
-   */
-  async sendRuntimeMessage(message, timeout) {
-    return new Promise((resolve, reject) => {
-      const timeoutId = setTimeout(() => {
-        reject(new Error('Message timeout'));
-      }, timeout);
-
-      this.api.runtime.sendMessage(message, (response) => {
-        clearTimeout(timeoutId);
-
-        if (this.api.runtime.lastError) {
-          reject(new Error(this.api.runtime.lastError.message));
-          return;
-        }
-
-        resolve(response || { success: false, error: 'No response' });
-      });
-    });
-  }
-
-  /**
-   * Send tab message with timeout
-   * @private
-   */
-  async sendTabMessage(tabId, message, timeout) {
-    return new Promise((resolve, reject) => {
-      const timeoutId = setTimeout(() => {
-        reject(new Error('Message timeout'));
-      }, timeout);
-
-      this.api.tabs.sendMessage(tabId, message, (response) => {
-        clearTimeout(timeoutId);
-
-        if (this.api.runtime.lastError) {
-          reject(new Error(this.api.runtime.lastError.message));
-          return;
-        }
-
-        resolve(response || { success: false, error: 'No response' });
-      });
-    });
-  }
-
-  /**
-   * Retry operation with exponential backoff
-   * @private
-   */
-  async retryOperation(operation, maxRetries, target) {
-    let lastError;
-
-    for (let attempt = 0; attempt <= maxRetries; attempt++) {
-      try {
-        return await operation();
-      } catch (error) {
-        lastError = error;
-
-        if (attempt === maxRetries) break;
-
-        const delay = this.retryDelay * Math.pow(2, attempt);
-        console.warn(
-          `[Comet Messaging] Retry ${
-            attempt + 1
-          }/${maxRetries} for ${target} after ${delay}ms:`,
-          error.message
-        );
-        await this.sleep(delay);
-      }
-    }
-
-    throw lastError;
-  }
-
-  /**
-   * Sleep utility
-   * @private
-   */
-  sleep(ms) {
-    return new Promise((resolve) => setTimeout(resolve, ms));
-  }
-
-  /**
-   * Set global message timeout
-   * @param {number} timeout - Timeout in milliseconds
-   */
-  setTimeout(timeout) {
-    this.messageTimeout = timeout;
-  }
-
-  /**
-   * Set global retry configuration
-   * @param {number} attempts - Number of retry attempts
-   * @param {number} delay - Base delay in milliseconds
-   */
-  setRetryConfig(attempts, delay) {
-    this.retryAttempts = attempts;
-    this.retryDelay = delay;
-  }
 }
 
 /**
- * Comet messaging error class
+ * Messaging error class
  */
 class CometMessagingError extends Error {
   constructor(message, originalError) {

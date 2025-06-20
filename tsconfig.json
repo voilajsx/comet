@@ -16,8 +16,8 @@
 
     /* Linting */
     "strict": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
     "noFallthroughCasesInSwitch": true,
 
     /* Path mapping for imports */
@@ -28,20 +28,23 @@
       "@/hooks/*": ["src/hooks/*"],
       "@/utils/*": ["src/utils/*"],
       "@/types/*": ["src/types/*"],
+      "@/shared/*": ["src/shared/*"],
+      "@/features/*": ["src/features/*"],
       "@voilajsx/comet/storage": ["src/platform/storage.js"],
       "@voilajsx/comet/messaging": ["src/platform/messaging.js"],
-      "@voilajsx/comet/background": ["src/platform/background.js"],
       "@voilajsx/comet/api": ["src/platform/api.js"],
       "@voilajsx/comet/platform": ["src/platform"]
     },
 
-    /* Types configuration */
+    /* Type checking */
+    "typeRoots": ["node_modules/@types", "types"],
+    "types": ["chrome", "vite/client"]
   },
   "include": [
     "src/**/*",
     "types/**/*",
-    "vite.config.ts",
-    "types/global.d.ts"
+    "vite.config.ts", 
+    "vite.content-script.config.js"
   ],
   "exclude": [
     "node_modules",

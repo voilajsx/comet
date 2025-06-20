@@ -7,7 +7,7 @@
 
 /**
  * Universal API utilities that work from any extension context
- * Routes through background script to avoid CORS issues
+ * Routes through service worker to avoid CORS issues
  */
 export const comet = {
   // Base fetch method
@@ -20,7 +20,7 @@ export const comet = {
             data: {
               url,
               method: options.method || 'GET',
-              headers: options.headers || {}, // Make sure this is passed
+              headers: options.headers || {},
               body: options.body || null,
               timeout: options.timeout || 30000,
             },
@@ -61,7 +61,7 @@ export const comet = {
     return this.fetch(url, {
       method: 'POST',
       body: data,
-      headers, // Headers should be passed here
+      headers,
     });
   },
 

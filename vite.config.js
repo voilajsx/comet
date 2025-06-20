@@ -1,46 +1,52 @@
 /**
- * Vite configuration for Comet browser extension development
- * Excludes bridge script - builds only UI components and background
- * @module @voilajsx/comet
+ * Main Vite Configuration - Popup, Options, Service Worker
  * @file vite.config.js
  */
-
 import { defineConfig } from 'vite';
-import react from '@vitejs/plugin-react';
-import tailwindcss from '@tailwindcss/vite';
 import { resolve } from 'path';
+import react from '@vitejs/plugin-react';
 
 export default defineConfig({
-  plugins: [react(), tailwindcss()],
+  plugins: [react()],
 
   build: {
     rollupOptions: {
       input: {
-        // HTML files for popup and options pages
+        // Main extension pages
         popup: resolve(__dirname, 'src/pages/popup/index.html'),
         options: resolve(__dirname, 'src/pages/options/index.html'),
 
-        // Background script only (no bridge)
-        background: resolve(__dirname, 'src/platform/background.js'),
+        // Service worker (background script)
+        'service-worker': resolve(__dirname, 'src/platform/service-worker.js'),
       },
       output: {
-        entryFileNames: (chunkInfo) => {
-          if (chunkInfo.name === 'background') {
-            return 'background.js';
-          }
-          return '[name].js';
-        },
+        entryFileNames: '[name].js',
         chunkFileNames: '[name]-[hash].js',
         assetFileNames: '[name].[ext]',
-        // Use ES modules - works for background and pages
-        format: 'es',
+        format: 'es', // ES modules
       },
     },
     outDir: 'dist',
-    emptyOutDir: true,
-    target: 'esnext',
     sourcemap: true,
+    target: 'esnext',
     assetsInlineLimit: 0,
+  },
+
+  resolve: {
+    alias: {
+      '@': resolve(__dirname, 'src'),
+      '@/components': resolve(__dirname, 'src/shared/components'),
+      '@/hooks': resolve(__dirname, 'src/hooks'),
+      '@/utils': resolve(__dirname, 'src/utils'),
+      '@/types': resolve(__dirname, 'src/types'),
+      '@voilajsx/comet/storage': resolve(__dirname, 'src/platform/storage.js'),
+      '@voilajsx/comet/messaging': resolve(
+        __dirname,
+        'src/platform/messaging.js'
+      ),
+      '@voilajsx/comet/api': resolve(__dirname, 'src/platform/api.js'),
+      '@voilajsx/comet/platform': resolve(__dirname, 'src/platform'),
+    },
   },
 
   define: {
@@ -50,34 +56,8 @@ export default defineConfig({
     ),
   },
 
-  resolve: {
-    alias: {
-      '@': resolve(__dirname, 'src'),
-      '@/components': resolve(__dirname, 'src/components'),
-      '@/hooks': resolve(__dirname, 'src/hooks'),
-      '@/utils': resolve(__dirname, 'src/utils'),
-      '@/types': resolve(__dirname, 'src/types'),
-      '@voilajsx/comet/storage': resolve(__dirname, 'src/platform/storage.js'),
-      '@voilajsx/comet/messaging': resolve(
-        __dirname,
-        'src/platform/messaging.js'
-      ),
-      '@voilajsx/comet/background': resolve(
-        __dirname,
-        'src/platform/background.js'
-      ),
-      '@voilajsx/comet/api': resolve(__dirname, 'src/platform/api.js'),
-      '@voilajsx/comet/platform': resolve(__dirname, 'src/platform'),
-    },
-  },
-
-  server: {
-    port: 5174,
-    open: false,
-  },
-
-  preview: {
-    port: 4174,
-    open: false,
+  // Optimize dependencies
+  optimizeDeps: {
+    include: ['react', 'react-dom', '@voilajsx/uikit'],
   },
 });

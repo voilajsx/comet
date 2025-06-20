@@ -4,19 +4,12 @@
     "theme": "metro",
     "variant": "light"
   },
-  "auth": {
-    "module": "userAuth",
-    "autoLogin": true,
-    "sessionDays": 7,
-    "rememberLogin": true
-  },
-  "features": {
-    "auth": true,
-    "notifications": true
-  },
   "ui": {
-    "size": "lg",
+    "size": "md",
     "animations": true
   },
-  "extensionEnabled": true
+  "extensionEnabled": true,
+  "pageAnalyzerEnabled": true,
+  "quoteGeneratorEnabled": true,
+  "notificationsEnabled": true
 }
