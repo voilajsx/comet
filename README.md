@@ -1,1205 +1,292 @@
-# 🚀 Comet Framework
+# Comet Framework Documentation
 
-**The most developer-friendly browser extension framework**
+## Table of Contents
 
-Comet is a modern, batteries-included framework for building beautiful cross-browser extensions. While other frameworks make you assemble pieces, Comet gives you everything working together from day one.
+1. [Get Started](#1-get-started)
+2. [Project Architecture](#2-project-architecture)
+3. [Build Your First Feature](#3-build-your-first-feature)
+4. [Add UI Component](#4-add-ui-component)
+5. [UIKit Components Reference](#5-uikit-components-reference)
+6. [Use Platform APIs](#6-use-platform-apis)
+7. [Ship Your Extension](#7-ship-your-extension)
+8. [LLM Development Guidelines](#8-llm-development-guidelines)
+9. [Reference](#9-reference)
 
-## Why Comet?
+---
 
-**Built for Extension Reality**
+## 1. Get Started
 
-- Real popup sizing (320px, not desktop widths)
-- Extension-specific UI components (PopupLayout, StatusBadge)
-- Cross-browser APIs that actually work
-- Built-in auth, storage, and messaging
+### What is Comet?
 
-**Developer Experience First**
+Comet is an auto-discovery extension framework that eliminates boilerplate. You write feature modules, Comet handles everything else - messaging, storage, UI components, theming, and cross-browser compatibility.
 
-- 5-minute setup to working extension
-- Hot reload that works
-- TypeScript out of the box
-- Zero configuration needed
+**Key Benefits:**
 
-**Production Ready**
+- **Auto-discovery:** Drop files in `features/` folder, framework finds them automatically
+- **UIKit Integration:** Professional themes and components out of the box (Tailwind v4 + shadcn/ui)
+- **Cross-browser:** Works on Chrome, Firefox, Edge without changes
+- **Clean APIs:** Simple wrappers for storage, messaging, and external calls
 
-- Used by 50K+ users across multiple extensions
-- Cross-browser: Chrome, Firefox, Edge, Opera, Brave
-- Robust error handling and retry logic
-- Professional UI themes included
-
-## Features at a Glance
-
-| Feature                      | Description                          | Why It Matters                              |
-| ---------------------------- | ------------------------------------ | ------------------------------------------- |
-| **🎨 43 UI Components**      | Complete design system with 6 themes | No more building buttons from scratch       |
-| **📦 Simple Modules**        | Explicit module registration         | Add features without breaking existing code |
-| **🌐 True Cross-Browser**    | One codebase, all browsers           | Ship everywhere without rewrites            |
-| **🔐 Built-in Auth**         | 7-day persistent sessions            | User login that actually works              |
-| **💾 Smart Storage**         | Auto-loading defaults, dot notation  | Storage that doesn't make you cry           |
-| **📡 Bulletproof Messaging** | Retry logic, error handling          | Communication that never fails              |
-
-## Quick Start (5 Minutes)
-
-### 1. Clone & Install
+### Quick Setup
 
 ```bash
-git clone https://github.com/voilajsx/comet.git my-extension
-cd my-extension
+git clone [repository]
+cd comet-extension
 npm install
+npm run dev
 ```
 
-### 2. Build
+Load in Chrome: Extensions → Developer mode → Load unpacked → Select `dist` folder
 
-```bash
-npm run build
+---
+
+## 2. Project Architecture
+
+### File Structure
+
+```
+src/
+  features/           # 🎯 Your feature modules go here
+    page-analyzer/    # Example: analyze page content
+    quote-generator/  # Example: fetch inspirational quotes
+    index.js          # Export all features (auto-discovery)
+  pages/             # Extension UI pages
+    popup/           # Extension popup interface
+    options/         # Settings page
+  shared/            # Reusable components
+    components/      # UI components (logos, badges, etc.)
+    layouts/         # Page layouts (popup, options wrappers)
+  platform/          # 🚫 Framework core - don't modify
+    storage.js       # Clean storage wrapper
+    messaging.js     # Cross-context communication
+    api.js           # CORS-free external requests
+    service-worker.js # Background coordination
+    content-script.js # Page interaction layer
+  defaults.json      # App settings and feature toggles
+public/
+  icons/             # Extension icons (16, 32, 48, 128px)
+manifest.json        # Extension configuration
 ```
 
-### 3. Load in Browser
+### Features Folder Philosophy
 
-1. Open Chrome → Extensions → Developer mode ON
-2. Click "Load unpacked" → Select `dist` folder
-3. Done! Your extension is running
+**Why Isolated Features Matter:**
+Each feature is completely self-contained in its own folder. This approach provides:
 
-### 4. Make Your First Change
+- **Modularity:** Features can be added, removed, or shared independently
+- **Maintainability:** Clear boundaries prevent tangled dependencies
+- **Scalability:** Large extensions stay organized as teams can work on separate features
+- **Reusability:** Features can be copied between extensions easily
 
-Edit `src/pages/popup/page.tsx`:
+**Auto-Discovery Benefits:**
+Instead of manually registering every feature, Comet automatically finds and loads anything exported from `features/index.js`. This means:
 
-```jsx
-// Change the title
-<PopupLayout
-  title="My Awesome Extension" // ← Change this
-  subtitle="Built with Comet"
->
-```
+- No central registry to maintain
+- Just export your feature and it's available
+- Framework handles all the loading and initialization
+- Less configuration, more coding
 
-Always rebuild after changes
+### Platform Files Explained
 
-## Your First Module (2 Minutes)
+**Storage (`platform/storage.js`):**
+Cross-browser wrapper that automatically loads defaults from `defaults.json`. Handles sync storage, fallbacks, and error recovery. You never touch browser storage APIs directly.
 
-### Create the Module
+**Messaging (`platform/messaging.js`):**
+Reliable communication between popup, content scripts, and background. Includes timeouts, error handling, and tab detection. Works consistently across all browsers.
 
-Create `src/scripts/modules/hello.js`:
+**API Utility (`platform/api.js`):**
+Makes external HTTP requests through the background script to avoid CORS issues. Handles JSON parsing, errors, and timeouts automatically.
+
+**Service Worker (`platform/service-worker.js`):**
+Coordinates background tasks, API proxying, and storage operations. Automatically handles extension lifecycle events and keeps your features running smoothly.
+
+**Content Script (`platform/content-script.js`):**
+Runs on web pages and automatically discovers/loads your feature modules. Handles messaging between page and extension contexts.
+
+---
+
+## 3. Build Your First Feature
+
+### Step 1: Create Feature Module
+
+Create `src/features/hello-world/index.js`:
 
 ```javascript
-export default {
-  name: 'hello',
+const helloWorldModule = {
+  name: 'helloWorld',
 
   handlers: {
-    sayHello: (data) => ({
-      message: `Hello ${data.name}!`,
-      timestamp: Date.now(),
-    }),
+    sayHello: (data) => {
+      return { message: `Hello, ${data.name || 'World'}!` };
+    },
+  },
+
+  init: () => {
+    console.log('[Hello World] Feature initialized');
+  },
+
+  meta: {
+    name: 'Hello World',
+    description: 'Simple greeting feature',
+    version: '1.0.0',
   },
 };
+
+export default helloWorldModule;
 ```
 
-### Register the Module
+**Module Structure Explained:**
 
-Edit `src/scripts/bridge.js` - add your import:
+- **name:** Unique identifier for your feature
+- **handlers:** Functions that can be called from UI components
+- **init:** Runs once when feature loads (optional)
+- **meta:** Information about your feature (optional)
+
+### Step 2: Register Feature
+
+Add to `src/features/index.js`:
 
 ```javascript
-import hello from './modules/hello.js'; // ← Add this
-
-const ALL_MODULES = [
-  pageAnalyzer,
-  quoteGenerator,
-  userAuth,
-  hello, // ← Add this
-];
+export { default as helloWorld } from './hello-world/index.js';
+// Framework auto-discovers all exports
 ```
 
-### Use the Module
+### Step 3: Enable Feature
 
-In your popup (`src/pages/popup/page.tsx`):
-
-```jsx
-import { messaging } from '@voilajsx/comet/messaging';
-
-const handleSayHello = async () => {
-  const response = await messaging.sendToContent({
-    type: 'sayHello',
-    data: { name: 'World' },
-  });
-
-  console.log(response.data.message); // "Hello World!"
-};
-```
-
-That's it! No complex configuration, no build system changes. Just create, register, use.
-
-## What You Get Out of the Box
-
-### Professional Extension UI
-
-```jsx
-<PopupLayout variant="default" size="md" title="Extension">
-  <Tabs defaultValue="main">
-    <TabsList>
-      <TabsTrigger value="main">Main</TabsTrigger>
-      <TabsTrigger value="settings">Settings</TabsTrigger>
-    </TabsList>
-    <TabsContent value="main">
-      <Button onClick={handleAction}>Do Something Cool</Button>
-    </TabsContent>
-  </Tabs>
-</PopupLayout>
-```
-
-### Working Authentication
-
-```jsx
-import { useAuth } from '@/hooks/useAuth';
-
-function AccountTab() {
-  const { isAuthenticated, user, login } = useAuth();
-
-  return isAuthenticated ? (
-    <UserCard user={user} />
-  ) : (
-    <LoginForm onLogin={login} />
-  );
-}
-```
-
-### Reliable Data Storage
-
-```javascript
-import { storage } from '@voilajsx/comet/storage';
-
-// Auto-loads from defaults.json
-const theme = await storage.get('app.theme', 'metro');
-
-// Saves across browser restarts
-await storage.set('user.preferences', { theme: 'dark' });
-```
-
-## Build & Deploy
-
-### Development Build
-
-```bash
-npm run dev  # Builds + watches for changes
-```
-
-### Production Build
-
-```bash
-npm run build  # Optimized build in dist/
-```
-
-### Package for Store
-
-```bash
-npm run package  # Creates comet-extension.zip ready for upload
-```
-
-## File Structure Overview
-
-```
-my-extension/
-├── src/
-│   ├── platform/          # 🔒 Framework core - don't touch
-│   ├── scripts/modules/   # 👨‍💻 Your page interaction logic
-│   ├── pages/             # 👨‍💻 Your extension UI (popup, options)
-│   ├── components/        # 👨‍💻 Your reusable UI components
-│   └── hooks/             # 👨‍💻 Your custom React hooks
-├── dist/                  # 📦 Built extension (load this in browser)
-├── manifest.json          # 📋 Extension configuration
-└── defaults.json          # ⚙️ Default settings
-```
-
-**Key Principle**: Framework code lives in `platform/`, your code lives everywhere else. This separation means you can update Comet without breaking your extension.
-
-# 🚀 Platform APIs & Core Concepts
-
-**Understanding the foundation that makes everything work**
-
-The platform layer is Comet's secret sauce - it handles all the complex browser extension APIs so you can focus on building features. Let's explore each platform component and learn when and how to use them.
-
-## Platform Architecture Overview
-
-```
-src/platform/
-├── storage.js     # 💾 Cross-browser storage with defaults
-├── messaging.js   # 📡 Reliable message passing
-├── background.js  # 🔄 Extension lifecycle manager
-└── api.js         # 🌐 Universal API proxy (CORS-free)
-```
-
-**Key Insight**: These aren't just wrappers - they're enhanced APIs that solve real extension development problems.
-
-## Storage API: Never Lose Data Again
-
-### The Problem Comet Solves
-
-```javascript
-// Without Comet: Manual default handling
-const theme = (await chrome.storage.sync.get('theme')).theme || 'light';
-const size = (await chrome.storage.sync.get('size')).size || 'medium';
-// Repeat for every setting... 😩
-
-// With Comet: Automatic defaults
-const theme = await storage.get('app.theme'); // Auto-loads from defaults.json
-const size = await storage.get('app.size'); // Falls back gracefully
-```
-
-### Basic Usage
-
-```javascript
-import { storage } from '@voilajsx/comet/storage';
-
-// Simple get/set
-await storage.set('username', 'john');
-const username = await storage.get('username');
-
-// Object storage
-await storage.set({
-  'user.name': 'John',
-  'user.theme': 'dark',
-  'app.version': '1.0.0',
-});
-
-// Get multiple values
-const userData = await storage.get(['user.name', 'user.theme']);
-// Returns: { 'user.name': 'John', 'user.theme': 'dark' }
-```
-
-### Smart Defaults System
-
-Create `defaults.json` in your project root:
+Add to `defaults.json`:
 
 ```json
 {
-  "app": {
-    "name": "My Extension",
-    "theme": "metro",
-    "variant": "light"
-  },
-  "features": {
-    "notifications": true,
-    "autoSync": false
-  },
-  "user": {
-    "sessionTimeout": 7
-  }
+  "helloWorldEnabled": true
 }
 ```
 
-Now storage automatically uses these defaults:
+**That's it!** Your feature is now loaded and available.
 
-```javascript
-// Gets 'metro' if not set, from defaults.json
-const theme = await storage.get('app.theme');
+---
 
-// Gets false if not set, from defaults.json
-const autoSync = await storage.get('features.autoSync');
+## 4. Add UI Component
 
-// Custom fallback overrides default
-const timeout = await storage.get('user.sessionTimeout', 30);
-```
+### Create Tab Component
 
-### Advanced Storage Patterns
+Create `src/features/hello-world/components/HelloWorldTab.tsx`:
 
-**Configuration Management**
-
-```javascript
-// In your options page
-const saveSettings = async (newSettings) => {
-  await storage.set({
-    'features.notifications': newSettings.notifications,
-    'app.theme': newSettings.theme,
-    'user.autoLogin': newSettings.autoLogin,
-  });
-};
-
-// In your popup
-const loadUserPreferences = async () => {
-  const prefs = await storage.get([
-    'features.notifications',
-    'app.theme',
-    'user.autoLogin',
-  ]);
-  return prefs;
-};
-```
-
-**Cross-Component State**
-
-```javascript
-// Share state between popup and options
-const [isEnabled, setIsEnabled] = useState(false);
-
-useEffect(() => {
-  // Load initial state
-  storage.get('extensionEnabled').then(setIsEnabled);
-
-  // Listen for changes from other components
-  const unsubscribe = storage.onChange((changes) => {
-    if (changes.extensionEnabled) {
-      setIsEnabled(changes.extensionEnabled.newValue);
-    }
-  });
-
-  return unsubscribe;
-}, []);
-```
-
-**When to Use Storage**
-
-- ✅ User preferences and settings
-- ✅ Authentication tokens and session data
-- ✅ Feature flags and configuration
-- ✅ Cache data that persists across browser sessions
-- ❌ Temporary UI state (use React state instead)
-- ❌ Large files or media (use IndexedDB directly)
-
-## Messaging API: Communication That Works
-
-### The Problem Comet Solves
-
-```javascript
-// Without Comet: Manual error handling, no retries
-chrome.tabs.sendMessage(tabId, message, (response) => {
-  if (chrome.runtime.lastError) {
-    // Handle error manually... 😩
-    console.error(chrome.runtime.lastError);
-    return;
-  }
-  // Use response...
-});
-
-// With Comet: Automatic retries, error handling
-const response = await messaging.sendToContent({ type: 'getData' });
-// Just works, handles all edge cases ✨
-```
-
-### Basic Message Patterns
-
-**Popup ↔ Content Script**
-
-```javascript
-// In popup component
+```jsx
+import React, { useState } from 'react';
+import { TabsContent } from '@voilajsx/uikit/tabs';
+import { Card, CardContent, CardHeader, CardTitle } from '@voilajsx/uikit/card';
+import { Button } from '@voilajsx/uikit/button';
+import { Alert, AlertDescription } from '@voilajsx/uikit/alert';
+import { CheckCircle, Loader2 } from 'lucide-react';
 import { messaging } from '@voilajsx/comet/messaging';
 
-const analyzeCurrentPage = async () => {
-  try {
-    const result = await messaging.sendToContent({
-      type: 'getPageData',
-      data: { includeImages: true },
-    });
+export default function HelloWorldTab({ value }) {
+  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState(null);
 
-    console.log('Page data:', result.data);
-  } catch (error) {
-    console.error('Analysis failed:', error);
-  }
-};
-```
+  const handleSayHello = async () => {
+    setLoading(true);
+    try {
+      const response = await messaging.sendToContent({
+        type: 'sayHello',
+        data: { name: 'Developer' },
+      });
 
-**Background ↔ Any Component**
+      if (response?.success) {
+        setResult({ type: 'success', message: response.data.message });
+      }
+    } catch (error) {
+      setResult({ type: 'error', message: 'Could not say hello' });
+    } finally {
+      setLoading(false);
+    }
+  };
 
-```javascript
-// Update extension badge from popup
-const updateBadge = async (count) => {
-  await messaging.sendToBackground({
-    type: 'badge.setText',
-    data: { text: count.toString() },
-  });
-};
+  return (
+    <TabsContent value={value} className="mt-0">
+      <Card className="bg-card border-border">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base text-card-foreground">
+            Hello World Feature
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <Button
+            onClick={handleSayHello}
+            disabled={loading}
+            className="w-full"
+          >
+            {loading ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Saying Hello...
+              </>
+            ) : (
+              <>
+                <CheckCircle className="h-4 w-4 mr-2" />
+                Say Hello
+              </>
+            )}
+          </Button>
 
-// Get extension info
-const getExtensionInfo = async () => {
-  const info = await messaging.sendToBackground({
-    type: 'extension.getInfo',
-  });
-  return info.data; // { id, version, manifest }
-};
-```
-
-### Advanced Messaging Patterns
-
-**Broadcasting to All Tabs**
-
-```javascript
-// Send message to all tabs with content scripts
-const results = await messaging.broadcast({
-  type: 'refreshData',
-  data: { timestamp: Date.now() },
-});
-
-// Results is array: [{ tabId, success, response }, ...]
-results.forEach(({ tabId, success, response }) => {
-  if (success) {
-    console.log(`Tab ${tabId} refreshed:`, response);
-  }
-});
-```
-
-**Listening for Messages**
-
-```javascript
-// In any component - listen for specific message types
-useEffect(() => {
-  const unsubscribe = messaging.onMessageType('userLoggedIn', (data) => {
-    setUser(data.user);
-    setIsAuthenticated(true);
-  });
-
-  return unsubscribe;
-}, []);
-
-// In background script - handle all message types
-messaging.onMessage((message, sender) => {
-  if (message.type === 'trackEvent') {
-    // Analytics logic
-    return { success: true };
-  }
-});
-```
-
-**When to Use Messaging**
-
-- ✅ Popup needs data from current page
-- ✅ Background processing triggers
-- ✅ Cross-component notifications
-- ✅ User action needs to affect all tabs
-- ❌ Simple component communication (use React context)
-- ❌ Frequent updates (consider storage changes instead)
-
-## Background Script: The Extension Brain
-
-### What Background Scripts Do
-
-The background script runs continuously and handles:
-
-- Extension lifecycle (install, update, startup)
-- Badge updates and notifications
-- API requests (bypasses CORS)
-- Cross-tab coordination
-- Persistent background tasks
-
-### Built-in Background Features
-
-**Automatic API Proxy**
-
-```javascript
-// In your modules or components
-import { comet } from '@voilajsx/comet/api';
-
-// This bypasses CORS automatically
-const data = await comet.get('https://api.external.com/data');
-const result = await comet.post('https://api.service.com/create', {
-  name: 'John',
-  email: 'john@example.com',
-});
-```
-
-**Badge Management**
-
-```javascript
-// Update extension icon badge
-await messaging.sendToBackground({
-  type: 'badge.setText',
-  data: { text: '5' },
-});
-
-await messaging.sendToBackground({
-  type: 'badge.setColor',
-  data: { color: '#FF0000' },
-});
-```
-
-### Extending Background Functionality
-
-**Custom Message Handlers**
-Create `src/background-extensions.js`:
-
-```javascript
-import { backgroundManager } from '@voilajsx/comet/background';
-
-// Add custom analytics handler
-backgroundManager.registerMessageHandler('trackEvent', async (data) => {
-  // Send to your analytics service
-  await fetch('https://analytics.myapp.com/event', {
-    method: 'POST',
-    body: JSON.stringify({
-      event: data.event,
-      properties: data.properties,
-      timestamp: Date.now(),
-    }),
-  });
-
-  return { success: true };
-});
-
-// Add notification handler
-backgroundManager.registerMessageHandler('showNotification', async (data) => {
-  await chrome.notifications.create({
-    type: 'basic',
-    iconUrl: '/icons/icon-48.png',
-    title: data.title,
-    message: data.message,
-  });
-
-  return { notificationShown: true };
-});
-```
-
-Then import in your background script:
-
-```javascript
-// In src/platform/background.js (or create custom background)
-import './background-extensions.js';
-```
-
-**Event Listeners**
-
-```javascript
-// Listen for extension events
-backgroundManager.addEventListener('installed', (data) => {
-  if (data.reason === 'install') {
-    // First install - show welcome page
-    chrome.tabs.create({ url: '/welcome.html' });
-  }
-});
-
-backgroundManager.addEventListener('tabUpdated', ({ tab, changeInfo }) => {
-  if (changeInfo.status === 'complete') {
-    // Page loaded - update badge based on page content
-    updateBadgeForTab(tab);
-  }
-});
-```
-
-**When to Extend Background**
-
-- ✅ Need persistent background processing
-- ✅ Cross-tab coordination required
-- ✅ External API integration
-- ✅ System notifications
-- ❌ Simple UI interactions (handle in components)
-- ❌ One-time operations (use messaging instead)
-
-## API Utility: CORS-Free Requests
-
-### The Problem Comet Solves
-
-```javascript
-// Without Comet: CORS blocks external API calls
-fetch('https://api.service.com/data'); // ❌ CORS error in content script
-
-// With Comet: Automatic proxy through background
-const data = await comet.get('https://api.service.com/data'); // ✅ Works
-```
-
-### API Patterns
-
-**Simple REST Operations**
-
-```javascript
-import { comet } from '@voilajsx/comet/api';
-
-// GET request
-const users = await comet.get('https://api.example.com/users');
-
-// POST with data
-const newUser = await comet.post('https://api.example.com/users', {
-  name: 'John',
-  email: 'john@example.com',
-});
-
-// PUT update
-const updated = await comet.put(
-  `https://api.example.com/users/${id}`,
-  userData
-);
-
-// DELETE
-await comet.delete(`https://api.example.com/users/${id}`);
-```
-
-**With Authentication Headers**
-
-```javascript
-// API with auth token
-const token = await storage.get('auth.token');
-const data = await comet.get('https://api.protected.com/data', {
-  Authorization: `Bearer ${token}`,
-  'X-API-Key': 'your-api-key',
-});
-
-// Check response
-if (data.ok) {
-  console.log('Success:', data.data);
-} else {
-  console.error('API Error:', data.error);
+          {result && (
+            <Alert
+              variant={result.type === 'success' ? 'default' : 'destructive'}
+            >
+              <CheckCircle className="h-4 w-4" />
+              <AlertDescription>{result.message}</AlertDescription>
+            </Alert>
+          )}
+        </CardContent>
+      </Card>
+    </TabsContent>
+  );
 }
 ```
 
-**Error Handling Patterns**
+### Add to Popup
 
-```javascript
-const fetchUserData = async (userId) => {
-  try {
-    const response = await comet.get(`/api/users/${userId}`);
+Edit `src/pages/popup/page.tsx` to include your tab:
 
-    if (response.ok) {
-      return { success: true, user: response.data };
-    } else {
-      return { success: false, error: response.error };
-    }
-  } catch (error) {
-    return { success: false, error: 'Network error' };
-  }
-};
-```
+```jsx
+// Import your component
+import HelloWorldTab from '@/features/hello-world/components/HelloWorldTab';
 
-## Platform Integration Patterns
-
-### Typical Extension Flow
-
-```javascript
-// 1. User clicks popup button
-const handleAnalyze = async () => {
-  // 2. Send message to content script
-  const pageData = await messaging.sendToContent({
-    type: 'analyzePage',
-  });
-
-  // 3. Save results to storage
-  await storage.set('lastAnalysis', {
-    data: pageData.data,
-    timestamp: Date.now(),
-  });
-
-  // 4. Update badge
-  await messaging.sendToBackground({
-    type: 'badge.setText',
-    data: { text: pageData.data.score.toString() },
-  });
-
-  // 5. Show notification
-  await messaging.sendToBackground({
-    type: 'showNotification',
-    data: {
-      title: 'Analysis Complete',
-      message: `Score: ${pageData.data.score}`,
-    },
-  });
-};
-```
-
-### Cross-Component State Management
-
-```javascript
-// Reactive settings system
-const useExtensionSettings = () => {
-  const [settings, setSettings] = useState({});
-
-  useEffect(() => {
-    // Load initial settings
-    storage
-      .get(['app.theme', 'features.enabled', 'user.preferences'])
-      .then(setSettings);
-
-    // Listen for changes from options page
-    const unsubscribe = storage.onChange((changes) => {
-      const updatedSettings = {};
-      Object.keys(changes).forEach((key) => {
-        updatedSettings[key] = changes[key].newValue;
-      });
-      setSettings((prev) => ({ ...prev, ...updatedSettings }));
-    });
-
-    return unsubscribe;
-  }, []);
-
-  const updateSetting = async (key, value) => {
-    await storage.set(key, value);
-    // Component auto-updates via onChange listener
-  };
-
-  return { settings, updateSetting };
-};
-```
-
-**When to Use Each Platform API**
-
-- **Storage**: Persistent data, user settings, cache
-- **Messaging**: Component communication, content script interaction
-- **Background**: System integration, persistent tasks, API proxy
-- **API**: External service calls, data fetching
-
-# 🚀 Module System & UI Components
-
-**Build features with confidence using Comet's module system and professional UI components**
-
-Now that you understand the platform layer, let's explore how to build actual features using Comet's module system and create beautiful interfaces with the built-in UI components.
-
-## Module System: Organized Feature Development
-
-### Module Philosophy
-
-Comet modules are **feature containers** - each module handles one specific capability. This keeps your code organized and makes features easy to add, remove, or debug.
-
-```javascript
-// ✅ Good: Focused modules
-pageAnalyzer.js; // Analyzes page content
-userAuth.js; // Handles authentication
-weatherWidget.js; // Shows weather data
-
-// ❌ Avoid: Kitchen sink modules
-utilityModule.js; // Does everything (hard to maintain)
-```
-
-### Module Lifecycle: From Idea to Working Feature
-
-**Step 1: Create Module File**
-
-```javascript
-// src/scripts/modules/weatherWidget.js
-export default {
-  name: 'weatherWidget',
-
-  handlers: {
-    // What can this module do?
-    getCurrentWeather: async (data) => {
-      const { city } = data;
-      // Module logic here
-      return { temperature: 22, condition: 'sunny' };
-    },
-
-    getForecast: async (data) => {
-      // 5-day forecast logic
-      return { forecast: [] };
-    },
+// Add to tabs array
+const tabs = [
+  {
+    id: 'hello',
+    label: 'Hello',
+    icon: CheckCircle,
+    content: <HelloWorldTab value="hello" />,
   },
-
-  // Optional: Run when module loads
-  init: () => {
-    console.log('Weather widget ready');
-  },
-};
-```
-
-**Step 2: Register Module**
-
-```javascript
-// src/scripts/bridge.js - Add to imports
-import weatherWidget from './modules/weatherWidget.js';
-
-// Add to modules array
-const ALL_MODULES = [
-  pageAnalyzer,
-  userAuth,
-  weatherWidget, // ← Your new module
+  // ... other tabs
 ];
 ```
 
-**Step 3: Use in UI**
+---
 
-```javascript
-// src/components/WeatherCard.tsx
-import { messaging } from '@voilajsx/comet/messaging';
+## 5. UIKit Components Reference
 
-const WeatherCard = () => {
-  const [weather, setWeather] = useState(null);
+### Available Components
 
-  const loadWeather = async () => {
-    const result = await messaging.sendToContent({
-      type: 'getCurrentWeather',
-      data: { city: 'London' },
-    });
-    setWeather(result.data);
-  };
+Comet uses `@voilajsx/uikit` - a Tailwind v4 + shadcn/ui component library. **Important:** Only use the core Tailwind utility classes listed below.
 
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Weather</CardTitle>
-      </CardHeader>
-      <CardContent>
-        {weather ? (
-          <div>
-            {weather.temperature}°C - {weather.condition}
-          </div>
-        ) : (
-          <Button onClick={loadWeather}>Load Weather</Button>
-        )}
-      </CardContent>
-    </Card>
-  );
-};
-```
+### Core Components
 
-### Real-World Module Examples
-
-**API Integration Module**
-
-```javascript
-// src/scripts/modules/todoManager.js
-import { comet } from '@voilajsx/comet/api';
-
-export default {
-  name: 'todoManager',
-
-  handlers: {
-    getTodos: async () => {
-      const response = await comet.get(
-        'https://jsonplaceholder.typicode.com/todos'
-      );
-      return {
-        todos: response.data.slice(0, 5),
-        count: response.data.length,
-      };
-    },
-
-    createTodo: async (data) => {
-      const response = await comet.post(
-        'https://jsonplaceholder.typicode.com/todos',
-        {
-          title: data.title,
-          completed: false,
-          userId: 1,
-        }
-      );
-
-      return {
-        success: response.ok,
-        todo: response.data,
-      };
-    },
-  },
-};
-```
-
-**Page Interaction Module**
-
-```javascript
-// src/scripts/modules/linkHighlighter.js
-export default {
-  name: 'linkHighlighter',
-
-  handlers: {
-    highlightLinks: (data) => {
-      const links = document.querySelectorAll('a');
-      const { color = 'yellow' } = data;
-
-      links.forEach((link) => {
-        link.style.backgroundColor = color;
-      });
-
-      return {
-        highlighted: links.length,
-        color: color,
-      };
-    },
-
-    removeHighlight: () => {
-      const links = document.querySelectorAll('a');
-      links.forEach((link) => {
-        link.style.backgroundColor = '';
-      });
-
-      return { removed: links.length };
-    },
-
-    getLinkCount: () => {
-      return {
-        total: document.links.length,
-        external: Array.from(document.links).filter(
-          (link) => !link.href.includes(window.location.hostname)
-        ).length,
-      };
-    },
-  },
-
-  init: () => {
-    console.log('Link highlighter ready on:', window.location.hostname);
-  },
-};
-```
-
-**Data Processing Module**
-
-```javascript
-// src/scripts/modules/textAnalyzer.js
-export default {
-  name: 'textAnalyzer',
-
-  handlers: {
-    analyzeText: (data) => {
-      const text = data.text || document.body.innerText;
-      const words = text.split(/\s+/).filter((w) => w.length > 0);
-
-      return {
-        wordCount: words.length,
-        charCount: text.length,
-        avgWordLength:
-          words.reduce((sum, w) => sum + w.length, 0) / words.length,
-        readingTime: Math.ceil(words.length / 200), // minutes
-        mostCommon: getMostCommonWords(words),
-      };
-    },
-
-    getHeadings: () => {
-      const headings = Array.from(
-        document.querySelectorAll('h1, h2, h3, h4, h5, h6')
-      );
-      return {
-        headings: headings.map((h) => ({
-          level: h.tagName,
-          text: h.textContent.trim(),
-          id: h.id || null,
-        })),
-        structure: buildHeadingStructure(headings),
-      };
-    },
-  },
-};
-
-// Helper functions
-function getMostCommonWords(words) {
-  const freq = {};
-  words.forEach((word) => {
-    const clean = word.toLowerCase().replace(/[^\w]/g, '');
-    if (clean.length > 3) freq[clean] = (freq[clean] || 0) + 1;
-  });
-
-  return Object.entries(freq)
-    .sort(([, a], [, b]) => b - a)
-    .slice(0, 5)
-    .map(([word, count]) => ({ word, count }));
-}
-```
-
-### Module Communication Patterns
-
-**Module-to-Module Communication**
-
-```javascript
-// Via main action coordination
-export default {
-  name: 'socialSharer',
-
-  handlers: {
-    shareCurrentPage: async () => {
-      // Get page data from another module
-      const pageData = await callOtherModule('pageAnalyzer', 'getPageData');
-
-      // Process and share
-      const shareData = {
-        title: pageData.title,
-        url: pageData.url,
-        summary: generateSummary(pageData.content),
-      };
-
-      return { shared: true, data: shareData };
-    },
-  },
-};
-
-// Helper to call other modules
-async function callOtherModule(moduleName, handler, data = {}) {
-  // This would be implemented in your bridge
-  return await globalModuleRegistry[moduleName].handlers[handler](data);
-}
-```
-
-**Stateful Modules**
-
-```javascript
-// Module with internal state
-export default {
-  name: 'clickTracker',
-
-  // Private state
-  _clickCount: 0,
-  _clickHistory: [],
-
-  handlers: {
-    startTracking: () => {
-      const self = window.cometModules.clickTracker;
-
-      document.addEventListener('click', (e) => {
-        self._clickCount++;
-        self._clickHistory.push({
-          element: e.target.tagName,
-          timestamp: Date.now(),
-          x: e.clientX,
-          y: e.clientY,
-        });
-      });
-
-      return { tracking: true };
-    },
-
-    getStats: () => {
-      const self = window.cometModules.clickTracker;
-      return {
-        totalClicks: self._clickCount,
-        recentClicks: self._clickHistory.slice(-10),
-      };
-    },
-
-    reset: () => {
-      const self = window.cometModules.clickTracker;
-      self._clickCount = 0;
-      self._clickHistory = [];
-      return { reset: true };
-    },
-  },
-};
-```
-
-## UI Components: Professional Interface in Minutes
-
-### PopupLayout: The Extension Container
-
-**Basic Usage**
+**Layout & Structure:**
 
 ```jsx
-import { PopupLayout } from '@voilajsx/uikit/popup';
-
-<PopupLayout
-  variant="default" // default | compact | mini
-  size="md" // sm | md | lg | auto
-  title="My Extension"
-  subtitle="Powered by Comet"
->
-  {/* Your extension content */}
-</PopupLayout>;
-```
-
-**Advanced PopupLayout**
-
-```jsx
-import { Badge } from '@voilajsx/uikit/badge';
-import { Button } from '@voilajsx/uikit/button';
-import { Settings } from 'lucide-react';
-
-<PopupLayout
-  variant="default"
-  size="lg"
-  title="Weather Extension"
-  subtitle="Current conditions"
-  logo={<WeatherIcon />}
-  badge={<Badge variant="default">Pro</Badge>}
-  headerActions={
-    <Button variant="ghost" size="sm" onClick={openSettings}>
-      <Settings className="h-4 w-4" />
-    </Button>
-  }
-  footer={
-    <div className="flex gap-2">
-      <Button variant="outline" className="flex-1">
-        Refresh
-      </Button>
-      <Button className="flex-1">Settings</Button>
-    </div>
-  }
->
-  <WeatherContent />
-</PopupLayout>;
-```
-
-### Building Tabbed Interfaces
-
-**Complete Tab System**
-
-```jsx
+import { Card, CardContent, CardHeader, CardTitle } from '@voilajsx/uikit/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@voilajsx/uikit/tabs';
-import { FileText, User, Settings } from 'lucide-react';
-
-function ExtensionPopup() {
-  return (
-    <PopupLayout title="Multi-Tool Extension" size="lg">
-      <Tabs defaultValue="analyzer" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="analyzer" className="flex items-center gap-1">
-            <FileText className="w-3 h-3" />
-            Analyze
-          </TabsTrigger>
-          <TabsTrigger value="account" className="flex items-center gap-1">
-            <User className="w-3 h-3" />
-            Account
-          </TabsTrigger>
-          <TabsTrigger value="settings" className="flex items-center gap-1">
-            <Settings className="w-3 h-3" />
-            Settings
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="analyzer">
-          <AnalyzerTab />
-        </TabsContent>
-
-        <TabsContent value="account">
-          <AccountTab />
-        </TabsContent>
-
-        <TabsContent value="settings">
-          <SettingsTab />
-        </TabsContent>
-      </Tabs>
-    </PopupLayout>
-  );
-}
+import { Separator } from '@voilajsx/uikit/separator';
+import { Badge } from '@voilajsx/uikit/badge';
 ```
 
-**Individual Tab Components**
+**Interactive Elements:**
 
 ```jsx
-// src/components/tabs/AnalyzerTab.tsx
-function AnalyzerTab() {
-  const [result, setResult] = useState(null);
-
-  const analyzeCurrentPage = async () => {
-    const response = await messaging.sendToContent({
-      type: 'analyzeText',
-    });
-    setResult(response.data);
-  };
-
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Page Analysis</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <Button onClick={analyzeCurrentPage} className="w-full">
-          Analyze Current Page
-        </Button>
-
-        {result && (
-          <div className="grid grid-cols-2 gap-2 text-sm">
-            <div>
-              <div className="font-medium">Words</div>
-              <div className="text-muted-foreground">{result.wordCount}</div>
-            </div>
-            <div>
-              <div className="font-medium">Reading Time</div>
-              <div className="text-muted-foreground">{result.readingTime}m</div>
-            </div>
-          </div>
-        )}
-      </CardContent>
-    </Card>
-  );
-}
-```
-
-### Form Patterns for Extensions
-
-**Settings Form**
-
-```jsx
-import {
-  Form,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormControl,
-} from '@voilajsx/uikit/form';
+import { Button } from '@voilajsx/uikit/button';
 import { Switch } from '@voilajsx/uikit/switch';
 import {
   Select,
@@ -1208,1332 +295,570 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@voilajsx/uikit/select';
+import { Label } from '@voilajsx/uikit/label';
+```
 
-function SettingsForm() {
-  const [settings, setSettings] = useState({});
+**Feedback & Status:**
 
-  const saveSettings = async (data) => {
-    await storage.set(data);
-    // Show success message
-  };
+```jsx
+import { Alert, AlertDescription } from '@voilajsx/uikit/alert';
+import { Progress } from '@voilajsx/uikit/progress';
+```
 
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Extension Settings</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <FormLabel>Enable Notifications</FormLabel>
-            <p className="text-sm text-muted-foreground">
-              Show desktop notifications for updates
-            </p>
-          </div>
-          <Switch
-            checked={settings.notifications}
-            onCheckedChange={(checked) =>
-              setSettings((prev) => ({ ...prev, notifications: checked }))
-            }
-          />
-        </div>
+**Layout Wrappers:**
 
-        <div className="space-y-2">
-          <FormLabel>Default Theme</FormLabel>
-          <Select
-            value={settings.theme}
-            onValueChange={(theme) =>
-              setSettings((prev) => ({ ...prev, theme }))
-            }
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Choose theme" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="metro">Metro</SelectItem>
-              <SelectItem value="neon">Neon</SelectItem>
-              <SelectItem value="studio">Studio</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+```jsx
+import { PopupLayout } from '@voilajsx/uikit/popup';
+import { PageLayout, PageHeader, PageContent } from '@voilajsx/uikit/page';
+```
 
-        <Button onClick={() => saveSettings(settings)} className="w-full">
-          Save Settings
-        </Button>
-      </CardContent>
-    </Card>
-  );
+**Theme System:**
+
+```jsx
+import { ThemeProvider, useTheme } from '@voilajsx/uikit/theme-provider';
+```
+
+### Icons (Lucide React)
+
+```jsx
+import {
+  CheckCircle,
+  AlertCircle,
+  Info,
+  Loader2,
+  Settings,
+  Palette,
+  FileText,
+  Quote,
+  Sun,
+  Moon,
+  Zap,
+  RefreshCw,
+} from 'lucide-react';
+```
+
+### Safe Tailwind Classes
+
+**⚠️ Important:** Comet doesn't have a Tailwind compiler, so only use these pre-defined utility classes:
+
+**Layout & Spacing:**
+
+```css
+/* Flexbox */
+flex, flex-col, flex-row, items-center, items-start, items-end
+justify-center, justify-between, justify-start, justify-end
+gap-1, gap-2, gap-3, gap-4, gap-6
+
+/* Grid */
+grid, grid-cols-1, grid-cols-2, grid-cols-3, grid-cols-4
+
+/* Padding & Margin */
+p-1, p-2, p-3, p-4, p-6, p-8
+m-1, m-2, m-3, m-4, m-6, m-8
+px-2, px-3, px-4, py-1, py-2, py-3
+mt-0, mt-2, mt-3, mb-2, mb-3, mb-4
+
+/* Width & Height */
+w-full, w-auto, w-4, w-5, w-6, w-8, w-10, w-12
+h-4, h-5, h-6, h-8, h-10, h-12
+min-h-screen
+```
+
+**Typography:**
+
+```css
+text-xs, text-sm, text-base, text-lg, text-xl
+font-medium, font-semibold, font-bold
+text-center, text-left, text-right
+leading-relaxed
+```
+
+**Colors (Theme-aware):**
+
+```css
+/* Text */
+text-foreground, text-muted-foreground, text-card-foreground
+text-primary, text-destructive
+text-green-500, text-blue-500
+
+/* Backgrounds */
+bg-background, bg-card, bg-muted, bg-primary
+bg-muted/50, bg-primary/10
+
+/* Borders */
+border, border-border, border-destructive
+```
+
+**Interactive States:**
+
+```css
+hover:bg-muted, hover:text-foreground
+disabled:opacity-50, disabled:cursor-not-allowed
+animate-spin
+```
+
+### Component Patterns
+
+**Standard Card Layout:**
+
+```jsx
+<Card className="bg-card border-border">
+  <CardHeader className="pb-3">
+    <CardTitle className="text-base text-card-foreground flex items-center gap-2">
+      <Icon className="w-4 h-4" />
+      Feature Title
+    </CardTitle>
+  </CardHeader>
+  <CardContent className="space-y-4">{/* Your content */}</CardContent>
+</Card>
+```
+
+**Button Variants:**
+
+```jsx
+<Button variant="default">Primary Action</Button>
+<Button variant="secondary">Secondary</Button>
+<Button variant="outline">Outline</Button>
+<Button variant="ghost">Ghost</Button>
+<Button variant="destructive">Delete</Button>
+```
+
+**Alert Patterns:**
+
+```jsx
+<Alert variant="default">
+  <CheckCircle className="h-4 w-4 text-green-500" />
+  <AlertDescription>Success message</AlertDescription>
+</Alert>
+
+<Alert variant="destructive">
+  <AlertCircle className="h-4 w-4" />
+  <AlertDescription>Error message</AlertDescription>
+</Alert>
+```
+
+**Loading States:**
+
+```jsx
+<Button disabled={loading}>
+  {loading ? (
+    <>
+      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+      Loading...
+    </>
+  ) : (
+    <>
+      <Icon className="h-4 w-4 mr-2" />
+      Action Text
+    </>
+  )}
+</Button>
+```
+
+### Theme Variables
+
+The UIKit provides CSS custom properties that work with any theme:
+
+```css
+/* Use these in custom styles */
+--background
+--foreground
+--card
+--card-foreground
+--primary
+--primary-foreground
+--muted
+--muted-foreground
+--border
+--destructive
+```
+
+---
+
+## 6. Use Platform APIs
+
+### Storage API
+
+**Purpose:** Persistent data with automatic defaults loading
+
+```javascript
+import { storage } from '@voilajsx/comet/storage';
+
+// Get single value (with fallback to defaults.json)
+const enabled = await storage.get('featureEnabled');
+
+// Get multiple values
+const settings = await storage.get(['theme', 'enabled']);
+
+// Set values
+await storage.set('userPreference', 'dark');
+await storage.set({ theme: 'dark', enabled: true });
+
+// Check if exists
+const hasKey = await storage.has('someKey');
+```
+
+### Messaging API
+
+**Purpose:** Communication between popup, content scripts, and background
+
+```javascript
+import { messaging } from '@voilajsx/comet/messaging';
+
+// Send to content script (from popup)
+const response = await messaging.sendToContent({
+  type: 'handlerName',
+  data: { param: 'value' },
+});
+
+// Send to background script
+const result = await messaging.sendToBackground({
+  type: 'operation',
+  data: { config: 'setting' },
+});
+
+// Get current tab info
+const tab = await messaging.getActiveTab();
+const isSupported = messaging.isTabSupported(tab);
+```
+
+### API Utility
+
+**Purpose:** External HTTP requests without CORS issues
+
+```javascript
+import { comet } from '@voilajsx/comet/api';
+
+// Simple GET request
+const response = await comet.get('https://api.example.com/data');
+if (response.ok) {
+  console.log(response.data);
+}
+
+// POST with data
+const result = await comet.post('https://api.example.com/save', {
+  name: 'value',
+});
+
+// All HTTP methods available: get, post, put, patch, delete
+```
+
+**API Features:**
+
+- Automatic JSON parsing
+- Error handling and timeouts
+- CORS-free through background proxy
+- Consistent response format across browsers
+
+---
+
+## 7. Ship Your Extension
+
+### Build for Production
+
+```bash
+# Create production build
+npm run build
+
+# Package for store submission
+npm run package
+```
+
+**Build Process:**
+
+- `npm run build` creates optimized files in `dist/`
+- `npm run package` creates `comet-extension.zip` ready for upload
+- Icons automatically copied from `public/icons/`
+- Manifest and all assets properly bundled
+
+### Store Submission
+
+**Chrome Web Store:**
+
+1. Upload `comet-extension.zip`
+2. Fill in store listing details
+3. Set pricing and distribution
+4. Submit for review
+
+**Firefox Add-ons:**
+Same zip file works for Firefox - Comet handles cross-browser compatibility automatically.
+
+---
+
+## 8. LLM Development Guidelines
+
+### Code Style Standards
+
+**File Naming:**
+
+- Feature folders: `kebab-case` (e.g., `page-analyzer`)
+- JavaScript files: `camelCase.js` (e.g., `pageAnalyzer.js`)
+- React components: `PascalCase.tsx` (e.g., `PageAnalyzerTab.tsx`)
+- Constants: `UPPER_SNAKE_CASE`
+
+**Comment Guidelines:**
+
+```javascript
+/**
+ * Feature description - what it does
+ * @module @voilajsx/comet
+ * @file path/to/file.js
+ */
+
+// Function-level comments
+function analyzeContent() {
+  // Explain complex logic inline
+  const result = processData();
+  return result;
 }
 ```
 
-**Quick Action Form**
+### Do's and Don'ts
 
-```jsx
-function QuickActionForm() {
-  const [url, setUrl] = useState('');
-  const [loading, setLoading] = useState(false);
+**✅ DO:**
 
-  const processUrl = async () => {
-    setLoading(true);
-    try {
-      const result = await messaging.sendToContent({
-        type: 'processUrl',
-        data: { url },
-      });
-      // Handle result
-    } catch (error) {
-      console.error('Processing failed:', error);
-    }
-    setLoading(false);
-  };
+- Use exact UIKit import paths: `@voilajsx/uikit/component`
+- Only use safe Tailwind classes from the list above
+- Follow Card + CardHeader + CardContent pattern for layouts
+- Include loading states with Loader2 icon
+- Use Alert components for user feedback
+- Wrap components in TabsContent for popup integration
+- Include proper error handling with try/catch
+- Use theme-aware colors (text-foreground, bg-card, etc.)
 
-  return (
-    <div className="space-y-3">
-      <div className="space-y-2">
-        <Label htmlFor="url">Website URL</Label>
-        <Input
-          id="url"
-          placeholder="https://example.com"
-          value={url}
-          onChange={(e) => setUrl(e.target.value)}
-        />
-      </div>
+**❌ DON'T:**
 
-      <Button
-        onClick={processUrl}
-        disabled={!url || loading}
-        className="w-full"
-      >
-        {loading ? (
-          <>
-            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-            Processing...
-          </>
-        ) : (
-          'Process URL'
-        )}
-      </Button>
-    </div>
-  );
-}
-```
+- Modify files in `src/platform/`
+- Use browser APIs directly (use platform wrappers)
+- Use arbitrary Tailwind classes not in the safe list
+- Use localStorage/sessionStorage directly
+- Import from wrong UIKit paths
+- Skip loading states in async operations
+- Use hardcoded colors (use CSS variables)
+- Create features without proper error handling
 
-### Status and Feedback Components
+### Required Patterns
 
-**ActionResult for User Feedback**
+**Feature Module Template:**
 
-```jsx
-import { ActionResult } from '@/components/ActionResult';
+```javascript
+/**
+ * Feature Name - Brief description
+ * @module @voilajsx/comet
+ * @file src/features/feature-name/index.js
+ */
 
-function AnalyzerTab() {
-  const [result, setResult] = useState(null);
-
-  const handleAnalysis = async () => {
-    try {
-      const data = await messaging.sendToContent({ type: 'analyze' });
-      setResult({
-        type: 'success',
-        message: 'Analysis completed successfully!',
-      });
-    } catch (error) {
-      setResult({
-        type: 'error',
-        message: 'Analysis failed. Please try again.',
-      });
-    }
-  };
-
-  return (
-    <div className="space-y-4">
-      <Button onClick={handleAnalysis}>Run Analysis</Button>
-
-      <ActionResult
-        result={result}
-        onDismiss={() => setResult(null)}
-        autoDismiss={true}
-        autoDismissDelay={3000}
-      />
-    </div>
-  );
-}
-```
-
-**Status Indicators**
-
-```jsx
-import { StatusBadge } from '@/components/StatusBadge';
-import { TabInfo } from '@/components/TabInfo';
-
-function ExtensionStatus() {
-  const [currentTab, setCurrentTab] = useState(null);
-  const [isEnabled, setIsEnabled] = useState(true);
-
-  useEffect(() => {
-    messaging.getActiveTab().then(setCurrentTab);
-    storage.get('extensionEnabled').then(setIsEnabled);
-  }, []);
-
-  return (
-    <div className="space-y-3">
-      <div className="flex items-center justify-between">
-        <span className="text-sm font-medium">Extension Status</span>
-        <StatusBadge
-          isEnabled={isEnabled}
-          isSupported={messaging.isTabSupported(currentTab)}
-        />
-      </div>
-
-      <TabInfo tab={currentTab} showSecurityIcon={true} />
-    </div>
-  );
-}
-```
-
-### Theming Your Extension
-
-**Built-in Themes**
-
-```jsx
-import { ThemeProvider } from '@voilajsx/uikit/theme-provider';
-
-// Available themes:
-const themes = [
-  'default', // Ocean blue - professional
-  'aurora', // Purple-green gradients - creative
-  'metro', // Gray-blue - clean/minimal
-  'neon', // Cyberpunk magenta-cyan - gaming
-  'ruby', // Red-gold - premium
-  'studio', // Designer gray-amber - elegant
-];
-
-function App() {
-  return (
-    <ThemeProvider theme="metro" variant="light">
-      <PopupLayout title="Themed Extension">
-        {/* All components automatically use theme colors */}
-      </PopupLayout>
-    </ThemeProvider>
-  );
-}
-```
-
-**Dynamic Theme Switching**
-
-```jsx
-function ThemeSelector() {
-  const { theme, variant, setTheme, setVariant } = useTheme();
-
-  return (
-    <div className="space-y-3">
-      <Select value={theme} onValueChange={setTheme}>
-        <SelectTrigger>
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="metro">Metro (Clean)</SelectItem>
-          <SelectItem value="neon">Neon (Gaming)</SelectItem>
-          <SelectItem value="studio">Studio (Elegant)</SelectItem>
-        </SelectContent>
-      </Select>
-
-      <div className="flex items-center justify-between">
-        <Label>Dark Mode</Label>
-        <Switch
-          checked={variant === 'dark'}
-          onCheckedChange={(dark) => setVariant(dark ? 'dark' : 'light')}
-        />
-      </div>
-    </div>
-  );
-}
-```
-
-## Integration Patterns: Bringing It All Together
-
-### Complete Feature Implementation
-
-```jsx
-// 1. Module handles logic
-// src/scripts/modules/bookmarkManager.js
-export default {
-  name: 'bookmarkManager',
+const featureModule = {
+  name: 'featureName',
 
   handlers: {
-    saveCurrentPage: async () => {
-      const bookmark = {
-        title: document.title,
-        url: window.location.href,
-        timestamp: Date.now(),
-        favicon: document.querySelector('link[rel="icon"]')?.href,
-      };
-
-      // Save to storage via platform API
-      const bookmarks = await chrome.storage.local.get('bookmarks');
-      const updated = [...(bookmarks.bookmarks || []), bookmark];
-      await chrome.storage.local.set({ bookmarks: updated });
-
-      return { saved: true, bookmark };
+    mainAction: (data) => {
+      try {
+        // Your logic here
+        return { success: true, result: data };
+      } catch (error) {
+        throw new Error('Operation failed: ' + error.message);
+      }
     },
+  },
+
+  init: () => {
+    console.log('[Feature Name] Feature initialized');
+  },
+
+  meta: {
+    name: 'Feature Name',
+    description: 'What this feature does',
+    version: '1.0.0',
   },
 };
 
-// 2. UI component uses module
-// src/components/BookmarkButton.tsx
-function BookmarkButton() {
-  const [isSaving, setIsSaving] = useState(false);
-  const [result, setResult] = useState(null);
-
-  const saveBookmark = async () => {
-    setIsSaving(true);
-    try {
-      const response = await messaging.sendToContent({
-        type: 'saveCurrentPage',
-      });
-
-      setResult({
-        type: 'success',
-        message: 'Page bookmarked successfully!',
-      });
-    } catch (error) {
-      setResult({
-        type: 'error',
-        message: 'Failed to save bookmark',
-      });
-    }
-    setIsSaving(false);
-  };
-
-  return (
-    <div className="space-y-3">
-      <Button onClick={saveBookmark} disabled={isSaving} className="w-full">
-        {isSaving ? (
-          <>
-            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-            Saving...
-          </>
-        ) : (
-          <>
-            <Bookmark className="w-4 h-4 mr-2" />
-            Bookmark Page
-          </>
-        )}
-      </Button>
-
-      <ActionResult result={result} onDismiss={() => setResult(null)} />
-    </div>
-  );
-}
+export default featureModule;
 ```
 
-**Why This Pattern Works**
-
-- ✅ **Separation of concerns**: Module handles logic, component handles UI
-- ✅ **Reusable**: Module can be called from anywhere
-- ✅ **Testable**: Each piece can be tested independently
-- ✅ **Maintainable**: Clear boundaries between functionality and presentation
-
-# 🚀 Comet Framework - Part 4: Code Organization & Best Practices
-
-**Master the art of writing maintainable, scalable extension code**
-
-Great extensions aren't just about features - they're about code that's easy to understand, modify, and maintain. Let's explore why Comet organizes code the way it does and learn how to write code that stands the test of time.
-
-## Understanding Extension Architecture: The Big Picture
-
-### Why Extensions Need Different Organization
-
-Browser extensions are unique applications with special constraints:
-
-1. **Multiple Entry Points**: Popup, options page, content scripts, background script
-2. **Limited Screen Space**: Popup is tiny (320px wide max)
-3. **Different User Contexts**: Quick actions vs detailed configuration
-4. **Cross-Page Communication**: Components need to talk to each other
-5. **Persistent State**: Data must survive browser restarts
-
-**Traditional web apps** have one main interface. **Extensions** have multiple interfaces serving different purposes. This is why Comet separates popup and options - they serve fundamentally different user needs.
-
-### The Two-Page Strategy: Why It Matters
-
-**The Popup Page** - Your Extension's Front Door
-
-```
-┌─────────────────┐
-│   Quick Tools   │  ← 320px wide maximum
-│                 │
-│ [Analyze Page]  │  ← One-click actions
-│ [Save Bookmark] │
-│ [User: John]    │  ← Status at a glance
-│                 │
-└─────────────────┘
-```
-
-**User Mental Model**: "I want to DO something quickly"
-
-- Opens 10+ times per day
-- Stays open for 5-30 seconds
-- Focused on immediate actions
-- Mobile-like interaction patterns
-
-**The Options Page** - Your Extension's Control Panel
-
-```
-┌─────────────────────────────────────────────┐
-│               Extension Settings             │
-│                                             │
-│  API Configuration                          │
-│  ┌─────────────────────────────────────┐    │
-│  │ API Key: [******************]      │    │
-│  │ Endpoint: [api.service.com]       │    │
-│  └─────────────────────────────────────┘    │
-│                                             │
-│  Feature Settings                           │
-│  ☑ Enable notifications                     │
-│  ☑ Auto-analyze pages                       │
-│  ☐ Advanced metrics                         │
-│                                             │
-│  Theme Settings                             │
-│  ○ Light  ● Dark  ○ Auto                    │
-│                                             │
-└─────────────────────────────────────────────┘
-```
-
-**User Mental Model**: "I want to SET UP my extension the way I like it"
-
-- Opens once per week/month
-- Stays open for 2-10 minutes
-- Focused on configuration and customization
-- Desktop-like interaction patterns
-
-### Why This Separation Is Critical
-
-**Without separation** (bad pattern):
+**UI Component Template:**
 
 ```jsx
-// ❌ Everything crammed into popup
-<PopupLayout>
-  <Tabs>
-    <Tab value="actions">
-      <Button>Analyze</Button> {/* User's primary need */}
-    </Tab>
-    <Tab value="settings">
-      <APIKeyInput /> {/* Rarely used, clutters interface */}
-      <ThemeSelector /> {/* Takes up valuable space */}
-      <NotificationSettings /> {/* Makes popup slow to load */}
-    </Tab>
-  </Tabs>
-</PopupLayout>
-```
-
-**Problems with this approach:**
-
-- Popup becomes slow (loading all settings)
-- Primary actions get buried in tabs
-- Mobile-unfriendly (too much content)
-- Settings are hard to use in tiny space
-
-**With proper separation** (good pattern):
-
-```jsx
-// ✅ Popup: Fast, focused actions
-<PopupLayout title="Page Tools">
-  <QuickAnalyzer />     {/* Core feature, always visible */}
-  <BookmarkButton />    {/* Secondary feature, one click */}
-  <UserStatus />        {/* Status check, minimal space */}
-</PopupLayout>
-
-// ✅ Options: Comprehensive configuration
-<PageLayout title="Extension Settings">
-  <APIConfiguration />     {/* Detailed form with validation */}
-  <FeatureToggles />      {/* All features with descriptions */}
-  <ThemeCustomization />  {/* Full theme options */}
-  <DataManagement />      {/* Export, import, reset options */}
-</PageLayout>
-```
-
-## File Organization: The Logic Behind the Structure
-
-### Why This Folder Structure?
-
-```
-src/
-├── pages/           # 🎨 Complete user interfaces
-├── components/      # 🧩 Reusable UI building blocks
-├── hooks/          # ⚡ Reusable React logic
-├── scripts/        # 🔧 Browser interaction logic
-├── platform/       # 🏗️ Framework foundation
-└── utils/          # 🛠️ Pure helper functions
-```
-
-This isn't arbitrary - it follows **separation of concerns** and **developer mental models**:
-
-**When you think "I need to build a page"** → Go to `pages/`
-**When you think "I need a reusable button"** → Go to `components/`
-**When you think "I need to interact with the webpage"** → Go to `scripts/`
-**When you think "I need a utility function"** → Go to `utils/`
-
-### The Pages Folder: Complete User Experiences
-
-```
-src/pages/
-├── popup/
-│   ├── index.html      # HTML entry point for popup
-│   ├── popup.tsx       # React app initialization
-│   └── page.tsx        # Main popup component
-└── options/
-    ├── index.html      # HTML entry point for options
-    ├── options.tsx     # React app initialization
-    └── page.tsx        # Main options component
-```
-
-**Why separate HTML files?**
-
-- Each page is a separate browser window
-- Different Content Security Policy requirements
-- Independent loading and performance
-- Browser extension manifest requires separate entry points
-
-**Example popup structure:**
-
-```jsx
-// src/pages/popup/page.tsx
-export default function PopupPage() {
-  // 🎯 Focus: What can user do RIGHT NOW on current page?
-  const [currentTab, setCurrentTab] = useState(null);
-  const [extensionEnabled, setExtensionEnabled] = useState(true);
-
-  useEffect(() => {
-    // Load ONLY data needed immediately
-    loadEssentialData();
-  }, []);
-
-  return (
-    <PopupLayout title="Page Tools" size="md">
-      {/* Primary action - what user opens popup for */}
-      <PageAnalyzer currentTab={currentTab} />
-
-      {/* Secondary actions - quick access */}
-      <UserAccount />
-    </PopupLayout>
-  );
-}
-```
-
-**Why this works:**
-
-- **Fast loading**: Only essential data
-- **Clear purpose**: Everything serves immediate user needs
-- **Minimal state**: Just what affects the entire popup
-
-**Example options structure:**
-
-```jsx
-// src/pages/options/page.tsx
-export default function OptionsPage() {
-  // 🎯 Focus: How does user want extension configured?
-  const [allSettings, setAllSettings] = useState({});
-  const [saveStatus, setSaveStatus] = useState(null);
-
-  useEffect(() => {
-    // Load ALL settings - user expects everything available
-    loadCompleteSettings();
-  }, []);
-
-  const updateAnySetting = async (key, value) => {
-    // Centralized update logic for consistency
-    setAllSettings((prev) => ({ ...prev, [key]: value }));
-    await storage.set(key, value);
-    setSaveStatus('Saved!');
-  };
-
-  return (
-    <PageLayout title="Extension Settings" size="lg">
-      <Card title="API Configuration">
-        <APISettings settings={allSettings} onUpdate={updateAnySetting} />
-      </Card>
-
-      <Card title="Features">
-        <FeatureToggles settings={allSettings} onUpdate={updateAnySetting} />
-      </Card>
-
-      <Card title="Appearance">
-        <ThemeSettings settings={allSettings} onUpdate={updateAnySetting} />
-      </Card>
-    </PageLayout>
-  );
-}
-```
-
-**Why this works:**
-
-- **Complete state**: Handles all settings at once
-- **Centralized updates**: One function handles all saves
-- **User expectations**: Everything is immediately available
-- **Comprehensive**: Room for detailed configuration
-
-## Components Folder: Building Blocks Strategy
-
-### Organization by Usage Context
-
-```
-src/components/
-├── popup/           # 🎯 Popup-specific components
-├── options/         # ⚙️ Options-specific components
-├── shared/          # 🤝 Used in multiple places
-└── auth/           # 🔐 Authentication-related
-```
-
-**Why organize by context instead of by type?**
-
-**Traditional (by type) - confusing:**
-
-```
-components/
-├── buttons/         # Which buttons? For what purpose?
-├── forms/          # Which forms? Popup or options?
-├── cards/          # Cards for what functionality?
-└── modals/         # Used where?
-```
-
-**Comet way (by context) - clear:**
-
-```
-components/
-├── popup/          # "I'm building popup UI"
-├── options/        # "I'm building settings UI"
-├── shared/         # "I need something reusable"
-└── auth/          # "I'm working on login/logout"
-```
-
-### Popup Components: Speed and Focus
-
-Popup components prioritize **speed** and **clarity**:
-
-```jsx
-// src/components/popup/QuickAnalyzer.tsx
-export default function QuickAnalyzer({ currentTab, disabled }) {
-  // 🎯 Single purpose: Let user analyze current page quickly
-  const [analyzing, setAnalyzing] = useState(false);
-  const [result, setResult] = useState(null);
-
-  const handleAnalyze = async () => {
-    setAnalyzing(true);
-
-    try {
-      const response = await messaging.sendToContent({
-        type: 'analyzePageText',
-        data: { includeMetrics: true },
-      });
-
-      setResult(response.data);
-    } catch (error) {
-      setResult({ error: 'Analysis failed' });
-    }
-
-    setAnalyzing(false);
-  };
-
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Page Analysis</CardTitle>
-      </CardHeader>
-      <CardContent>
-        {/* One primary action */}
-        <Button
-          onClick={handleAnalyze}
-          disabled={disabled || analyzing}
-          className="w-full"
-        >
-          {analyzing ? 'Analyzing...' : 'Analyze Page'}
-        </Button>
-
-        {/* Immediate results display */}
-        {result && !result.error && (
-          <div className="grid grid-cols-2 gap-2 mt-3 text-sm">
-            <div className="text-center">
-              <div className="font-bold">{result.wordCount}</div>
-              <div className="text-muted-foreground">Words</div>
-            </div>
-            <div className="text-center">
-              <div className="font-bold">{result.readingTime}m</div>
-              <div className="text-muted-foreground">Read time</div>
-            </div>
-          </div>
-        )}
-
-        {/* Error state */}
-        {result?.error && (
-          <div className="text-sm text-red-500 mt-2">{result.error}</div>
-        )}
-      </CardContent>
-    </Card>
-  );
-}
-```
-
-**Design principles for popup components:**
-
-- **Single responsibility**: One clear purpose
-- **Immediate feedback**: Show results right away
-- **Optimistic UI**: Show loading states immediately
-- **Error recovery**: Clear error messages
-- **Mobile-friendly**: Works on small screens
-
-### Options Components: Depth and Configuration
-
-Options components prioritize **comprehensiveness** and **user control**:
-
-```jsx
-// src/components/options/FeatureToggles.tsx
-export default function FeatureToggles({ settings, onUpdate }) {
-  // 🎯 Purpose: Let user configure all extension features
-
-  const features = [
-    {
-      key: 'features.autoAnalyze',
-      title: 'Auto-analyze Pages',
-      description: 'Automatically analyze pages when you visit them',
-      category: 'automation',
-      dependsOn: null,
-    },
-    {
-      key: 'features.notifications',
-      title: 'Desktop Notifications',
-      description: 'Show notifications when analysis completes',
-      category: 'ui',
-      dependsOn: null,
-    },
-    {
-      key: 'features.advancedMetrics',
-      title: 'Advanced Metrics',
-      description: 'Include readability scores and SEO analysis',
-      category: 'analysis',
-      dependsOn: 'features.autoAnalyze', // Only relevant if auto-analyze is on
-    },
-  ];
-
-  const handleToggle = async (feature, newValue) => {
-    // Check dependencies before allowing changes
-    if (!newValue && hasFeaturesThatDependOnThis(feature.key)) {
-      // Show confirmation dialog
-      const confirmed = confirm(
-        `Disabling this will also disable dependent features. Continue?`
-      );
-      if (!confirmed) return;
-    }
-
-    await onUpdate(feature.key, newValue);
-  };
-
-  return (
-    <div className="space-y-6">
-      {/* Group features by category for better organization */}
-      {['automation', 'analysis', 'ui'].map((category) => (
-        <div key={category}>
-          <h3 className="font-medium mb-3 capitalize">{category} Features</h3>
-
-          {features
-            .filter((f) => f.category === category)
-            .map((feature) => {
-              const isEnabled = settings[feature.key] ?? false;
-              const dependencyMet =
-                !feature.dependsOn || settings[feature.dependsOn];
-
-              return (
-                <div
-                  key={feature.key}
-                  className="flex justify-between items-start py-3"
-                >
-                  <div className="flex-1">
-                    <Label className="font-medium">{feature.title}</Label>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      {feature.description}
-                    </p>
-
-                    {/* Show dependency information */}
-                    {!dependencyMet && (
-                      <p className="text-xs text-orange-500 mt-1">
-                        Requires:{' '}
-                        {
-                          features.find((f) => f.key === feature.dependsOn)
-                            ?.title
-                        }
-                      </p>
-                    )}
-                  </div>
-
-                  <Switch
-                    checked={isEnabled && dependencyMet}
-                    onCheckedChange={(checked) =>
-                      handleToggle(feature, checked)
-                    }
-                    disabled={!dependencyMet}
-                  />
-                </div>
-              );
-            })}
-        </div>
-      ))}
-    </div>
-  );
-}
-```
-
-**Design principles for options components:**
-
-- **Comprehensive**: Show all available options
-- **Well-organized**: Group related settings together
-- **Dependency-aware**: Handle feature dependencies
-- **Descriptive**: Explain what each option does
-- **Immediate save**: No "Save" button needed
-
-### Shared Components: Reusable Across Contexts
-
-Shared components work in both popup and options:
-
-```jsx
-// src/components/shared/StatusBadge.tsx
-export default function StatusBadge({
-  isEnabled = true,
-  isSupported = true,
-  customStatus = null,
-}) {
-  // 🎯 Purpose: Show status consistently across all interfaces
-
-  // Allow custom status to override automatic detection
-  if (customStatus) {
-    return <Badge variant={customStatus.variant}>{customStatus.text}</Badge>;
-  }
-
-  // Automatic status detection based on props
-  const getStatus = () => {
-    if (!isEnabled) {
-      return { text: 'Disabled', variant: 'secondary' };
-    }
-
-    if (!isSupported) {
-      return { text: 'Unavailable', variant: 'outline' };
-    }
-
-    return { text: 'Ready', variant: 'default' };
-  };
-
-  const status = getStatus();
-
-  return <Badge variant={status.variant}>{status.text}</Badge>;
-}
-```
-
-**Usage in different contexts:**
-
-```jsx
-// In popup - automatic detection
-<StatusBadge isEnabled={extensionEnabled} isSupported={canUseOnThisPage} />
-
-// In options - custom status for specific features
-<StatusBadge customStatus={{ text: 'Pro Feature', variant: 'default' }} />
-```
-
-## Hooks Folder: Reusable Logic Patterns
-
-### Why Custom Hooks Matter in Extensions
-
-Extensions have unique state management needs:
-
-- Data persists across browser sessions
-- State shared between popup and options
-- Platform APIs (storage, messaging) need consistent handling
-- Feature flags control what's available
-
-### Extension-Specific Hooks
-
-```typescript
-// src/hooks/useExtensionState.ts
-export function useExtensionState<T>(
-  storageKey: string,
-  defaultValue: T
-): [T, (value: T) => Promise<void>, boolean] {
-  const [value, setValue] = useState<T>(defaultValue);
-  const [isLoading, setIsLoading] = useState(true);
-
-  // Load initial value from storage when component mounts
-  useEffect(() => {
-    const loadInitialValue = async () => {
-      try {
-        // Use Comet's storage with automatic defaults
-        const storedValue = await storage.get(storageKey, defaultValue);
-        setValue(storedValue);
-      } catch (error) {
-        console.error(`Failed to load ${storageKey}:`, error);
-        // Keep default value if loading fails
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    loadInitialValue();
-  }, [storageKey, defaultValue]);
-
-  // Update function that persists to storage
-  const updateValue = useCallback(
-    async (newValue: T) => {
-      try {
-        // Update local state immediately for responsive UI
-        setValue(newValue);
-
-        // Persist to storage
-        await storage.set(storageKey, newValue);
-      } catch (error) {
-        console.error(`Failed to save ${storageKey}:`, error);
-
-        // Revert local state if save fails
-        setValue(value);
-
-        // Re-throw so component can handle the error
-        throw error;
-      }
-    },
-    [storageKey, value]
-  );
-
-  return [value, updateValue, isLoading];
-}
-```
-
-**Why this pattern is powerful:**
-
-```jsx
-// Before: Manual storage handling in every component
-function MyComponent() {
-  const [theme, setTheme] = useState('metro');
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    // Every component needs this boilerplate
-    storage.get('app.theme', 'metro').then((stored) => {
-      setTheme(stored);
-      setLoading(false);
-    });
-  }, []);
-
-  const updateTheme = async (newTheme) => {
-    setTheme(newTheme);
-    try {
-      await storage.set('app.theme', newTheme);
-    } catch (error) {
-      setTheme(theme); // Revert on error
-    }
-  };
-
-  // Component logic...
-}
-
-// After: One line with hook
-function MyComponent() {
-  const [theme, setTheme, loading] = useExtensionState('app.theme', 'metro');
-
-  // Component logic...
-}
-```
-
-### Specialized Hooks for Common Patterns
-
-```typescript
-// src/hooks/useFeatureFlag.ts
-export function useFeatureFlag(
-  featureName: string,
-  defaultEnabled: boolean = false
-): [boolean, (enabled: boolean) => Promise<void>, boolean] {
-  // Automatically prefix with 'features.' for consistency
-  return useExtensionState(`features.${featureName}`, defaultEnabled);
-}
-```
-
-**Usage:**
-
-```jsx
-function AdvancedFeature() {
-  const [enabled, setEnabled, loading] = useFeatureFlag(
-    'advancedMetrics',
-    false
-  );
-
-  if (loading) return <div>Loading...</div>;
-  if (!enabled) return null;
-
-  return <AdvancedMetricsPanel />;
-}
-```
-
-```typescript
-// src/hooks/useCurrentTab.ts
-export function useCurrentTab() {
-  const [currentTab, setCurrentTab] = useState(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const loadCurrentTab = async () => {
-      try {
-        const tab = await messaging.getActiveTab();
-        setCurrentTab(tab);
-      } catch (error) {
-        console.error('Failed to get current tab:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadCurrentTab();
-  }, []);
-
-  return {
-    currentTab,
-    loading,
-    canUseExtension: messaging.isTabSupported(currentTab),
-  };
-}
-```
-
-**Usage:**
-
-```jsx
-function PageActions() {
-  const { currentTab, loading, canUseExtension } = useCurrentTab();
-
-  if (loading) return <div>Loading...</div>;
-
-  return (
-    <div>
-      <TabInfo tab={currentTab} />
-      <Button disabled={!canUseExtension}>Analyze Page</Button>
-    </div>
-  );
-}
-```
-
-## Utils Folder: Pure Helper Functions
-
-### Organization by Domain
-
-```
-src/utils/
-├── format.ts        # Text and number formatting
-├── validation.ts    # Input validation functions
-├── browser.ts       # Browser-specific utilities
-├── api.ts          # API helper functions
-└── constants.ts    # Application constants
-```
-
-**Why organize by domain?** When you need a formatting function, you know exactly where to look.
-
-### Pure Functions for Predictable Code
-
-```typescript
-// src/utils/format.ts
-
 /**
- * Format file size in human-readable format
- * Pure function: same input always produces same output
- */
-export function formatFileSize(bytes: number): string {
-  if (bytes === 0) return '0 Bytes';
-
-  const k = 1024;
-  const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-
-  return `${parseFloat((bytes / Math.pow(k, i)).toFixed(1))} ${sizes[i]}`;
-}
-
-/**
- * Calculate reading time based on word count
- * Uses average reading speed of 200 words per minute
- */
-export function calculateReadingTime(wordCount: number): string {
-  if (wordCount === 0) return '0 min read';
-
-  const wordsPerMinute = 200;
-  const minutes = Math.ceil(wordCount / wordsPerMinute);
-
-  return `${minutes} min read`;
-}
-
-/**
- * Truncate text with ellipsis
- * Ensures text fits in limited UI space
- */
-export function truncateText(text: string, maxLength: number): string {
-  if (text.length <= maxLength) return text;
-
-  // Find last space before limit to avoid cutting words
-  const truncated = text.slice(0, maxLength - 3);
-  const lastSpace = truncated.lastIndexOf(' ');
-
-  if (lastSpace > 0) {
-    return truncated.slice(0, lastSpace) + '...';
-  }
-
-  return truncated + '...';
-}
-
-/**
- * Format relative time (e.g., "2 hours ago")
- * Useful for showing when data was last updated
- */
-export function formatRelativeTime(timestamp: number): string {
-  const now = Date.now();
-  const diff = now - timestamp;
-
-  const seconds = Math.floor(diff / 1000);
-  const minutes = Math.floor(seconds / 60);
-  const hours = Math.floor(minutes / 60);
-  const days = Math.floor(hours / 24);
-
-  if (days > 0) return `${days} day${days === 1 ? '' : 's'} ago`;
-  if (hours > 0) return `${hours} hour${hours === 1 ? '' : 's'} ago`;
-  if (minutes > 0) return `${minutes} minute${minutes === 1 ? '' : 's'} ago`;
-
-  return 'Just now';
-}
-```
-
-**Why pure functions matter:**
-
-- **Predictable**: Same input always gives same output
-- **Testable**: Easy to write unit tests
-- **Reusable**: Can use anywhere without side effects
-- **Debuggable**: No hidden dependencies or state changes
-
-## Writing Comments That Actually Help
-
-### The Three Types of Useful Comments
-
-1. **File headers** - Explain the purpose and context
-2. **Function headers** - Explain complex logic and decisions
-3. **Inline comments** - Explain non-obvious code
-
-### File Header Pattern
-
-```javascript
-/**
- * User Authentication Module - Handles persistent login sessions
- *
- * What it does:
- * - Manages user login/logout with JWT tokens
- * - Provides 7-day persistent sessions
- * - Handles automatic token refresh
- *
- * Why it exists:
- * - Users shouldn't have to login every day
- * - Extension needs to work across browser restarts
- * - Multiple pages (popup, options) need auth state
- *
- * How it works:
- * - Stores JWT tokens in browser storage
- * - Checks token expiry on each use
- * - Auto-refreshes tokens before expiry
- *
- * Dependencies:
- * - @voilajsx/comet/storage: For persistent token storage
- * - @voilajsx/comet/api: For authentication API calls
- *
- * Used by:
- * - AuthProvider component (provides auth context)
- * - LoginForm component (handles user login)
- * - All components that need user data
- *
+ * Feature Name Tab Component
  * @module @voilajsx/comet
- * @file src/scripts/modules/userAuth.js
+ * @file src/features/feature-name/components/FeatureNameTab.tsx
  */
-```
 
-### Function Comment Pattern
+import React, { useState } from 'react';
+import { TabsContent } from '@voilajsx/uikit/tabs';
+import { Card, CardContent, CardHeader, CardTitle } from '@voilajsx/uikit/card';
+import { Button } from '@voilajsx/uikit/button';
+import { Alert, AlertDescription } from '@voilajsx/uikit/alert';
+import { Loader2, CheckCircle, AlertCircle } from 'lucide-react';
+import { messaging } from '@voilajsx/comet/messaging';
 
-```javascript
-/**
- * Login user and establish persistent session
- *
- * Why async: Makes API calls to authentication service
- * Why 7-day expiry: Balance between security and user convenience
- * Why store timestamp: Needed to check token age for auto-refresh
- *
- * @param {Object} credentials - User login information
- * @param {string} credentials.email - User's email address
- * @param {string} credentials.password - User's password
- * @returns {Promise<Object>} Login result with success status and user data
- */
-async function loginUser(credentials) {
-  const { email, password } = credentials;
+interface FeatureNameTabProps {
+  value: string;
+}
 
-  // Validate inputs before making expensive API call
-  if (!email || !password) {
-    return {
-      success: false,
-      error: 'Email and password are required',
-    };
-  }
+export default function FeatureNameTab({ value }: FeatureNameTabProps) {
+  const [loading, setLoading] = useState(false);
+  const [result, setResult] =
+    (useState < { type: 'success' | 'error', message: string }) | (null > null);
 
-  try {
-    // Use Comet's API utility to handle CORS automatically
-    const response = await comet.post('/auth/login', {
-      email,
-      password,
-    });
+  const handleAction = async () => {
+    setLoading(true);
+    setResult(null);
 
-    if (response.ok && response.data.token) {
-      // Store authentication data for 7-day persistence
-      await storage.set({
-        'auth.token': response.data.token,
-        'auth.timestamp': Date.now(), // Used by token expiry check
-        'auth.userEmail': email, // Used for UI display
-        'auth.refreshToken': response.data.refreshToken, // For auto-refresh
+    try {
+      const response = await messaging.sendToContent({
+        type: 'handlerName',
+        data: {},
       });
 
-      return {
-        success: true,
-        user: {
-          email,
-          token: response.data.token,
-          loginTime: Date.now(),
-        },
-      };
+      if (response?.success) {
+        setResult({
+          type: 'success',
+          message: 'Action completed successfully!',
+        });
+      } else {
+        setResult({
+          type: 'error',
+          message: response?.error || 'Action failed',
+        });
+      }
+    } catch (error) {
+      setResult({ type: 'error', message: 'Could not perform action' });
+    } finally {
+      setLoading(false);
     }
-
-    return {
-      success: false,
-      error: response.data?.error || 'Login failed',
-    };
-  } catch (error) {
-    console.error('Login error:', error);
-    return {
-      success: false,
-      error: 'Unable to connect to authentication service',
-    };
-  }
-}
-```
-
-### Component Comment Pattern
-
-```jsx
-/**
- * Status Badge - Shows extension state with appropriate styling
- *
- * Design pattern: Automatically determines status from props
- * Usage pattern: Pass current state, component handles display logic
- * Styling pattern: Uses semantic colors for theme compatibility
- *
- * Examples:
- * <StatusBadge isEnabled={true} isSupported={true} />    // Shows "Ready" (green)
- * <StatusBadge isEnabled={false} />                      // Shows "Disabled" (gray)
- * <StatusBadge customStatus={{ text: "Pro", variant: "default" }} />
- *
- * @param {boolean} isEnabled - Whether extension is turned on
- * @param {boolean} isSupported - Whether current page supports extension
- * @param {Object} customStatus - Override automatic status detection
- */
-export default function StatusBadge({
-  isEnabled = true,
-  isSupported = true,
-  customStatus = null,
-}) {
-  // Custom status overrides automatic detection
-  if (customStatus) {
-    return <Badge variant={customStatus.variant}>{customStatus.text}</Badge>;
-  }
-
-  // Determine status automatically based on current state
-  const getStatus = () => {
-    if (!isEnabled) {
-      return { text: 'Disabled', variant: 'secondary' };
-    }
-
-    if (!isSupported) {
-      return { text: 'Unavailable', variant: 'outline' };
-    }
-
-    return { text: 'Ready', variant: 'default' };
   };
 
-  const status = getStatus();
+  return (
+    <TabsContent value={value} className="mt-0">
+      <Card className="bg-card border-border">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base text-card-foreground flex items-center gap-2">
+            <CheckCircle className="w-4 h-4" />
+            Feature Name
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <Button onClick={handleAction} disabled={loading} className="w-full">
+            {loading ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Processing...
+              </>
+            ) : (
+              <>
+                <CheckCircle className="w-4 h-4 mr-2" />
+                Perform Action
+              </>
+            )}
+          </Button>
 
-  return <Badge variant={status.variant}>{status.text}</Badge>;
+          {result && (
+            <Alert
+              variant={result.type === 'success' ? 'default' : 'destructive'}
+            >
+              {result.type === 'success' ? (
+                <CheckCircle className="h-4 w-4 text-green-500" />
+              ) : (
+                <AlertCircle className="h-4 w-4" />
+              )}
+              <AlertDescription>{result.message}</AlertDescription>
+            </Alert>
+          )}
+        </CardContent>
+      </Card>
+    </TabsContent>
+  );
 }
 ```
 
-## Best Practices Summary
+### UIKit Import Requirements
 
-### Code Organization Principles
+**Always use these exact imports:**
 
-1. **Separate by user intent**: Popup (do) vs Options (configure)
-2. **Group by usage context**: Components used together live together
-3. **Extract reusable logic**: Hooks for common patterns
-4. **Keep utilities pure**: No side effects in helper functions
+```jsx
+// Core Layout
+import { Card, CardContent, CardHeader, CardTitle } from '@voilajsx/uikit/card';
+import { TabsContent } from '@voilajsx/uikit/tabs';
 
-### Naming Conventions That Scale
+// Interactive
+import { Button } from '@voilajsx/uikit/button';
+import { Switch } from '@voilajsx/uikit/switch';
+import { Alert, AlertDescription } from '@voilajsx/uikit/alert';
 
-```javascript
-// ✅ Good names - clear purpose and scope
-const isUserAuthenticated = checkAuthStatus();
-const handleAnalyzeButtonClick = () => {};
-const UserProfileCard = ({ user }) => {};
-const useExtensionSettings = () => {};
+// Icons
+import { CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
 
-// ❌ Bad names - vague and confusing
-const flag = check();
-const handle = () => {};
-const Card = ({ data }) => {};
-const useStuff = () => {};
+// Platform APIs
+import { messaging } from '@voilajsx/comet/messaging';
+import { storage } from '@voilajsx/comet/storage';
+import { comet } from '@voilajsx/comet/api';
 ```
 
-### Error Handling Strategy
+---
 
-```javascript
-// ✅ Consistent error handling pattern
-async function performAction() {
-  try {
-    const result = await riskyOperation();
+## 9. Reference
 
-    return {
-      success: true,
-      data: result,
-    };
-  } catch (error) {
-    // Log for developers
-    console.error('Action failed:', error);
+### Complete API Reference
 
-    // Return user-friendly message
-    return {
-      success: false,
-      error: 'Action could not be completed. Please try again.',
-    };
-  }
-}
+**Storage Methods:**
 
-// Usage pattern
-const result = await performAction();
+- `storage.get(key)` - Get single value with defaults fallback
+- `storage.get([keys])` - Get multiple values
+- `storage.set(key, value)` - Set single value
+- `storage.set(object)` - Set multiple values
+- `storage.remove(key)` - Remove value
+- `storage.has(key)` - Check if exists
 
-if (result.success) {
-  // Handle success
-  displayData(result.data);
-} else {
-  // Handle error
-  showErrorMessage(result.error);
-}
-```
+**Messaging Methods:**
 
-**Why this pattern works:**
+- `messaging.sendToContent(message)` - Send to content script
+- `messaging.sendToBackground(message)` - Send to background
+- `messaging.getActiveTab()` - Get current tab
+- `messaging.isTabSupported(tab)` - Check if tab supports scripts
 
-- **Consistent**: Same pattern everywhere in the codebase
-- **User-friendly**: Clear error messages for users
-- **Developer-friendly**: Detailed logging for debugging
-- **Predictable**: Functions always return success/error objects
+**API Methods:**
 
-This organizational approach makes your extension:
+- `comet.get(url)` - GET request
+- `comet.post(url, data)` - POST request
+- `comet.put(url, data)` - PUT request
+- `comet.delete(url)` - DELETE request
 
-- **Easy to navigate**: Everything has a logical place
-- **Easy to understand**: Clear purposes and patterns
-- **Easy to maintain**: Changes don't break other parts
-- **Easy to extend**: Adding features follows established patterns
+### Example Extensions
 
-The goal is code that tells a story - make it a good one that future developers (including yourself) will thank you for.
+**Page Analyzer Feature:** See `src/features/page-analyzer/` for a complete working example that analyzes page size and content metrics.
+
+**Quote Generator Feature:** See `src/features/quote-generator/` for an example that fetches external API data with fallback handling.
+
+### Troubleshooting
+
+**Feature not loading:**
+
+- Check export in `src/features/index.js`
+- Verify module structure has `name` and `handlers`
+- Look for JavaScript errors in console
+
+**Messaging fails:**
+
+- Ensure tab supports content scripts (`messaging.isTabSupported()`)
+- Check handler name matches exactly
+- Verify content script is loaded (refresh page)
+
+**Storage issues:**
+
+- Check `defaults.json` syntax is valid JSON
+- Use `storage.has()` to verify key exists
+- Check browser extension storage limits
+
+**UIKit component errors:**
+
+- Verify exact import paths from documentation
+- Only use safe Tailwind classes from the list
+- Check if component is properly wrapped in required providers
+
+**Build problems:**
+
+- Run `npm run clean` then `npm run build`
+- Check all imports use correct paths
+- Verify all dependencies are installed
