@@ -1,23 +1,12 @@
+<p align="center">
+  <a href="https://github.com/your-org/your-repo-name"> <!-- Replace with your actual repository URL -->
+    <img src="https://i.ibb.co/rK8CWRx5/comet-logo.png" alt="Comet Framework Logo" width="200" />
+  </a>
+</p>
+
 # Comet Framework Documentation
 
-## Table of Contents
-
-1. [Get Started](#1-get-started)
-2. [Project Architecture](#2-project-architecture)
-3. [Feature Module System](#3-feature-module-system)
-4. [Build Your First Feature](#4-build-your-first-feature)
-5. [Configuration System](#5-configuration-system)
-6. [UIKit Components Reference](#6-uikit-components-reference)
-7. [Platform APIs](#7-platform-apis)
-8. [Ship Your Extension](#8-ship-your-extension)
-9. [LLM Development Guidelines](#9-llm-development-guidelines)
-10. [Reference](#10-reference)
-
----
-
-## 1. Get Started
-
-### What is Comet?
+## What is Comet?
 
 Comet is a **metadata-first** Chrome extension framework with **auto-discovery** architecture. Features self-register through declarative metadata, and the framework automatically builds UI, handles messaging, and manages configuration.
 
@@ -29,60 +18,76 @@ Comet is a **metadata-first** Chrome extension framework with **auto-discovery**
 - **UIKit Integration:** Professional themes with storage-based variant control
 - **Zero Boilerplate:** Drop feature folder, export module, everything works
 
+---
+
+## Table of Contents
+
+1.  [Quick Start](#1-quick-start)
+2.  [Project Architecture](#2-project-architecture)
+3.  [Feature Module System](#3-feature-module-system)
+4.  [Build Your First Feature](#4-build-your-first-feature)
+5.  [Configuration System](#5-configuration-system)
+6.  [UIKit Components Reference](#6-uikit-components-reference)
+7.  [Platform APIs](#7-platform-apis)
+8.  [Ship Your Extension](#8-ship-your-extension)
+9.  [LLM Development Guidelines](#9-llm-development-guidelines)
+10. [Reference](#10-reference)
+
+---
+
+## 1. Quick Start
+
 ### Quick Setup
 
 ```bash
 git clone [repository]
 cd comet-extension
 npm install
-npm run dev
-```
-
-Load in Chrome: Extensions → Developer mode → Load unpacked → Select `dist` folder
-
----
+npm run build
 
 ## 2. Project Architecture
 
 ### File Structure
 
 ```
+
 src/
-  features/           # 🎯 Auto-discovered feature modules
-    page-analyzer/    # Feature: analyze page metrics
-      index.js        # Feature metadata & handlers
-      components/
-        PopupTab.tsx  # Auto-loaded popup tab
-        OptionsPanel.tsx # Auto-loaded options panel
-    quote-generator/  # Feature: inspirational quotes
-      index.js
-      components/
-        PopupTab.tsx
-        OptionsPanel.tsx
-    index.js          # Auto-generated exports
-  pages/             # Extension UI pages
-    popup/           # Extension popup (minimal - uses PopupWrapper)
-    options/         # Settings page (minimal - uses OptionsWrapper)
-  shared/            # Reusable components & layouts
-    layouts/         # Smart wrapper components
-      PopupWrapper.tsx    # Auto-discovery popup layout
-      OptionsWrapper.tsx  # Auto-discovery options layout
-    components/      # Shared UI components
-      ExtensionLogo.tsx   # Storage-aware logo
-      GeneralSettingsPanel.tsx # Core settings
-    hooks/           # React hooks
-      useModuleDiscovery.ts # Auto-discovery engine
-  platform/          # 🚫 Framework core - don't modify
-    storage.js       # Storage with auto-reload defaults
-    messaging.js     # Cross-context communication
-    api.js           # CORS-free external requests
-    service-worker.js # Background coordination
-    content-script.js # Auto-discovery content injection
-  defaults.js        # ✨ Central configuration (auto-reloads on build)
+features/ # 🎯 Auto-discovered feature modules
+page-analyzer/ # Feature: analyze page metrics
+index.js # Feature metadata & handlers
+components/
+PopupTab.tsx # Auto-loaded popup tab
+OptionsPanel.tsx # Auto-loaded options panel
+quote-generator/ # Feature: inspirational quotes
+index.js
+components/
+PopupTab.tsx
+OptionsPanel.tsx
+index.js # Auto-generated exports
+pages/ # Extension UI pages
+popup/ # Extension popup (minimal - uses PopupWrapper)
+options/ # Settings page (minimal - uses OptionsWrapper)
+shared/ # Reusable components & layouts
+layouts/ # Smart wrapper components
+PopupWrapper.tsx # Auto-discovery popup layout
+OptionsWrapper.tsx # Auto-discovery options layout
+components/ # Shared UI components
+ExtensionLogo.tsx # Storage-aware logo
+GeneralSettingsPanel.tsx # Core settings
+hooks/ # React hooks
+useModuleDiscovery.ts # Auto-discovery engine
+platform/ # 🚫 Framework core - don't modify
+storage.js # Storage with auto-reload defaults
+messaging.js # Cross-context communication
+api.js # CORS-free external requests
+service-worker.js # Background coordination
+content-script.js # Auto-discovery content injection
+defaults.js # ✨ Central configuration (auto-reloads on build)
 public/
-  icons/             # Extension icons
-manifest.json        # Extension configuration
-```
+icons/ # Extension icons
+manifest.json # Extension configuration
+
+````
 
 ### Auto-Discovery Architecture
 
@@ -191,7 +196,7 @@ const config = {
 };
 
 export default config;
-```
+````
 
 ### Feature Registration
 
