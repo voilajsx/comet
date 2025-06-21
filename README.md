@@ -2,19 +2,29 @@
    <img src="public/comet_logo.png" alt="Comet Framework Logo" width="200" />
 </p>
 
-# Comet Framework Documentation
-
 ## What is Comet?
 
-Comet is a **metadata-first** Chrome extension framework with **auto-discovery** architecture. Features self-register through declarative metadata, and the framework automatically builds UI, handles messaging, and manages configuration.
+Comet is a **metadata-first cross-browser extension framework** with **auto-discovery** architecture. Features self-register through declarative metadata, and the framework automatically builds UI, handles messaging, and manages configuration.
+
+### Our Philosophy
+
+At its core, Comet is built on principles designed to empower developers and teams:
+
+- **Rapid Development:** We believe in building fast. Comet removes boilerplate and streamlines processes, allowing you to focus on feature logic and accelerate delivery.
+- **Scalability & Extensibility:** Code should grow with your project, not against it. Our architecture ensures your codebase remains scalable and extensible, minimizing breaking changes as you add new functionality.
+- **Module & Team Autonomy:** Comet fosters independent module development. By providing clear boundaries and self-registering components, it enables individual contributors and teams to work autonomously and efficiently.
+- **Super Simple Setup & Clean Conventions:** Getting started shouldn't be a hurdle. Comet offers a super simple setup process, coupled with clean and consistent conventions that make development intuitive, maintainable, and predictable.
 
 **Key Benefits:**
 
-- **Metadata-First Architecture:** Features define their capabilities through metadata, not code
-- **Auto-Discovery UI:** Popup tabs and options panels generate automatically from feature metadata
-- **Storage-Based Configuration:** All settings centralized in `defaults.js` with automatic reloading
-- **UIKit Integration:** Professional themes with storage-based variant control
-- **Zero Boilerplate:** Drop feature folder, export module, everything works
+- **Metadata-First Architecture:** Define features declaratively, reducing boilerplate and increasing maintainability.
+- **Automated UI Generation:** Popup tabs and options panels magically appear from feature metadata, eliminating manual UI wiring.
+- **Instant Configuration Reloads:** Changes to `defaults.js` are reflected immediately on rebuild, supercharging your development workflow.
+- **Unified Storage & Messaging APIs:** Simplified `storage` and `messaging` abstractions streamline cross-context communication and persistent data handling.
+- **Built-in CORS-Free HTTP Client:** Make external API requests without worrying about CORS, thanks to an integrated proxy.
+- **Theme-Aware UIKit:** Leverage professional, adaptive UI components that ensure a consistent look and feel across all themes.
+- **Automated Cross-Browser Compatibility:** Develop a single codebase that automatically adapts to Chrome, Firefox, Edge, and Opera, handling Manifest V3 and browser API differences.
+- **Structured Feature Lifecycle:** Manage feature logic cleanly with dedicated `init` and `lifecycle` hooks.
 
 ---
 
