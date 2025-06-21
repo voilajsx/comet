@@ -1,8 +1,7 @@
 /**
- * Quote Generator Feature - Simple Tab Component
- * Fetches and displays inspirational quotes
+ * Quote Generator Popup Tab Component
  * @module @voilajsx/comet
- * @file src/features/quote-generator/components/QuoteGeneratorTab.tsx
+ * @file src/features/quote-generator/components/PopupTab.tsx
  */
 
 import React, { useState, useEffect } from 'react';
@@ -11,24 +10,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@voilajsx/uikit/card';
 import { Button } from '@voilajsx/uikit/button';
 import { Alert, AlertDescription } from '@voilajsx/uikit/alert';
 import { Separator } from '@voilajsx/uikit/separator';
+import { Badge } from '@voilajsx/uikit/badge';
 import { Quote, Loader2, CheckCircle, AlertCircle, RefreshCw } from 'lucide-react';
 import { messaging } from '@voilajsx/comet/messaging';
-
-interface QuoteGeneratorTabProps {
-  value: string;
-}
-
-interface QuoteData {
-  text: string;
-  author: string;
-  category?: string;
-  source?: string;
-}
-
-interface ActionResultType {
-  type: 'success' | 'error';
-  message: string;
-}
+import { storage } from '@voilajsx/comet/storage';
 
 /**
  * Built-in ActionResult component
@@ -37,14 +22,9 @@ function ActionResult({
   result, 
   onDismiss, 
   autoDismiss = true, 
-  autoDismissDelay = 3000 
-}: {
-  result: ActionResultType | null;
-  onDismiss: () => void;
-  autoDismiss?: boolean;
-  autoDismissDelay?: number;
+  autoDismissDelay = 2000 
 }) {
-  useEffect(() => {
+  React.useEffect(() => {
     if (result && autoDismiss && onDismiss) {
       const timer = setTimeout(onDismiss, autoDismissDelay);
       return () => clearTimeout(timer);
@@ -67,10 +47,25 @@ function ActionResult({
   );
 }
 
-export default function QuoteGeneratorTab({ value }: QuoteGeneratorTabProps) {
+export default function QuoteGeneratorTab({ value }) {
   const [isLoading, setIsLoading] = useState(false);
-  const [quoteResult, setQuoteResult] = useState<ActionResultType | null>(null);
-  const [currentQuote, setCurrentQuote] = useState<QuoteData | null>(null);
+  const [quoteResult, setQuoteResult] = useState(null);
+  const [currentQuote, setCurrentQuote] = useState(null);
+  const [quoteType, setQuoteType] = useState('general');
+
+  // Load quote type setting on mount
+  useEffect(() => {
+    loadQuoteType();
+  }, []);
+
+  const loadQuoteType = async () => {
+    try {
+      const type = await storage.get('quoteGenerator.type', 'general');
+      setQuoteType(type);
+    } catch (error) {
+      console.error('[Quote Generator] Failed to load quote type:', error);
+    }
+  };
 
   const handleGetQuote = async () => {
     setIsLoading(true);
@@ -78,7 +73,7 @@ export default function QuoteGeneratorTab({ value }: QuoteGeneratorTabProps) {
 
     try {
       const response = await messaging.sendToContent({
-        type: 'getQuote',
+        type: quoteType === 'motivational' ? 'getMotivationalQuote' : 'getQuote',
         data: {}
       });
 
@@ -112,14 +107,27 @@ export default function QuoteGeneratorTab({ value }: QuoteGeneratorTabProps) {
     }
   };
 
+  const getQuoteTypeLabel = () => {
+    return quoteType === 'motivational' ? 'Motivational Quote' : 'General Quote';
+  };
+
+  const getQuoteTypeDescription = () => {
+    return quoteType === 'motivational' 
+      ? 'Inspiring and uplifting messages'
+      : 'Wisdom and life advice';
+  };
+
   return (
     <TabsContent value={value} className="mt-0">
       <Card className="bg-card border-border">
         <CardHeader className="pb-3">
           <CardTitle className="text-base text-card-foreground flex items-center gap-2">
             <Quote className="w-4 h-4" />
-            Inspirational Quotes
+            {getQuoteTypeLabel()}
           </CardTitle>
+          <p className="text-xs text-muted-foreground">
+            {getQuoteTypeDescription()}
+          </p>
         </CardHeader>
         <CardContent className="space-y-4">
           
@@ -161,9 +169,18 @@ export default function QuoteGeneratorTab({ value }: QuoteGeneratorTabProps) {
                 
                 <div className="flex items-center justify-between text-xs text-muted-foreground">
                   <span>— {currentQuote.author}</span>
-                  {currentQuote.source === 'fallback' && (
-                    <span className="bg-muted px-2 py-1 rounded text-xs">Offline</span>
-                  )}
+                  <div className="flex items-center gap-2">
+                    {currentQuote.category && (
+                      <Badge variant="outline" className="text-xs">
+                        {currentQuote.category}
+                      </Badge>
+                    )}
+                    {currentQuote.source === 'fallback' && (
+                      <Badge variant="secondary" className="text-xs">
+                        Offline
+                      </Badge>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
@@ -172,7 +189,7 @@ export default function QuoteGeneratorTab({ value }: QuoteGeneratorTabProps) {
           {/* Helper text */}
           <div className="text-center">
             <p className="text-xs text-muted-foreground">
-              Fresh inspiration with every click
+              Change quote type in settings
             </p>
           </div>
           

@@ -1,13 +1,17 @@
 /**
- * Main Vite Configuration - Popup, Options, Service Worker
+ * Main Vite Configuration - With Auto-Discovery Plugin
  * @file vite.config.js
  */
 import { defineConfig } from 'vite';
 import { resolve } from 'path';
 import react from '@vitejs/plugin-react';
+import { autoDiscoverFeatures } from './build-plugins/feature-discovery.js';
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [
+    autoDiscoverFeatures(), // 🆕 Auto-discover features
+    react(),
+  ],
 
   build: {
     rollupOptions: {

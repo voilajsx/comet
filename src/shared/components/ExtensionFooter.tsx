@@ -1,10 +1,11 @@
 /**
- * Extension Footer Component - Flexible footer with content slots
+ * Extension Footer Component - Flexible footer with content slots and storage integration
  * @module @voilajsx/comet
  * @file src/shared/components/ExtensionFooter.tsx
  */
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { storage } from '@voilajsx/comet/storage';
 
 interface ExtensionFooterProps {
   children?: React.ReactNode;
@@ -13,11 +14,12 @@ interface ExtensionFooterProps {
   centerContent?: React.ReactNode;
   variant?: 'default' | 'compact' | 'minimal';
   className?: string;
+  useStorageContent?: boolean; // New prop to enable storage content loading
 }
 
 /**
  * Flexible footer component for extension pages
- * Supports multiple content slots and layouts
+ * Supports multiple content slots and layouts with storage integration
  */
 export default function ExtensionFooter({
   children,
@@ -25,19 +27,66 @@ export default function ExtensionFooter({
   rightContent,
   centerContent,
   variant = 'default',
-  className = ''
+  className = '',
+  useStorageContent = false
 }: ExtensionFooterProps) {
+  const [footerContent, setFooterContent] = useState<string>('');
+  const [loading, setLoading] = useState(useStorageContent);
+
+  // Load footer content from storage if enabled
+  useEffect(() => {
+    if (useStorageContent) {
+      loadFooterContent();
+    }
+  }, [useStorageContent]);
+
+  const loadFooterContent = async () => {
+    try {
+      const content = await storage.get('footer-content', '');
+      setFooterContent(content);
+    } catch (error) {
+      console.warn('[ExtensionFooter] Failed to load footer content:', error);
+      setFooterContent('');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const variantClasses = {
-    default: 'p-4 border-t border-border',
-    compact: 'p-2 border-t border-border',
+    default: 'p-4 ',
+    compact: 'p-2 ',
     minimal: 'p-2'
   };
+
+  // Loading state for storage content
+  if (loading) {
+    return (
+      <footer className={` ${variantClasses[variant]} ${className}`}>
+        <div className="flex items-center justify-center">
+          <div className="h-4 w-48 bg-muted animate-pulse rounded" />
+        </div>
+      </footer>
+    );
+  }
 
   // If children provided, use simple layout
   if (children) {
     return (
-      <footer className={`bg-background ${variantClasses[variant]} ${className}`}>
+      <footer className={` ${variantClasses[variant]} ${className}`}>
         {children}
+      </footer>
+    );
+  }
+
+  // If using storage content and it exists, show it
+  if (useStorageContent && footerContent) {
+    return (
+      <footer className={` ${variantClasses[variant]} ${className}`}>
+        <div className="flex items-center justify-center">
+          <div className="text-sm text-muted-foreground">
+            {footerContent}
+          </div>
+        </div>
       </footer>
     );
   }
@@ -47,7 +96,7 @@ export default function ExtensionFooter({
 
   if (hasMultipleSlots) {
     return (
-      <footer className={`bg-background ${variantClasses[variant]} ${className}`}>
+      <footer className={` ${variantClasses[variant]} ${className}`}>
         <div className="flex items-center justify-between">
           {/* Left slot */}
           <div className="flex items-center">
@@ -73,11 +122,16 @@ export default function ExtensionFooter({
   // Single content layout
   const singleContent = leftContent || rightContent || centerContent;
   
-  return (
-    <footer className={`bg-background ${variantClasses[variant]} ${className}`}>
-      <div className="flex items-center justify-center">
-        {singleContent}
-      </div>
-    </footer>
-  );
+  if (singleContent) {
+    return (
+      <footer className={` ${variantClasses[variant]} ${className}`}>
+        <div className="flex items-center justify-center">
+          {singleContent}
+        </div>
+      </footer>
+    );
+  }
+
+  // Empty footer - don't render anything
+  return null;
 }

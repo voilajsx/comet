@@ -1,5 +1,5 @@
 /**
- * Quote Generator Feature Module - Simplified
+ * Quote Generator Feature Module - Metadata First Architecture (Simplified)
  * Fetches inspirational quotes with basic fallback
  * @module @voilajsx/comet
  * @file src/features/quote-generator/index.js
@@ -7,30 +7,94 @@
 
 import { comet } from '@voilajsx/comet/api';
 
-/**
- * Quote Generator Module Configuration
- */
-const quoteGeneratorModule = {
+// 📋 METADATA & CONFIGURATION (Easy Access at Top)
+const config = {
   name: 'quoteGenerator',
 
+  // 🎨 UI Auto-Discovery Configuration
+  ui: {
+    popup: {
+      tab: {
+        label: 'Quotes',
+        icon: 'Quote',
+        order: 2,
+        requiresTab: false,
+        description: 'Get inspirational quotes',
+      },
+      component: () => import('./components/PopupTab.tsx'),
+    },
+    options: {
+      panel: {
+        label: 'Quote Generator',
+        icon: 'Quote',
+        section: 'features',
+        order: 3,
+        description: 'Configure quote generation behavior',
+      },
+      component: () => import('./components/OptionsPanel.tsx'),
+    },
+  },
+
+  // ⚙️ Settings Schema (Simplified)
+  settings: {
+    quoteType: {
+      key: 'quoteGenerator.type',
+      default: 'general',
+      type: 'select',
+      label: 'Quote Type',
+      description: 'Choose the type of quotes to display',
+      options: [
+        {
+          value: 'general',
+          label: 'General Quotes',
+          description: 'Wisdom and life advice',
+        },
+        {
+          value: 'motivational',
+          label: 'Motivational Quotes',
+          description: 'Inspiring messages',
+        },
+      ],
+    },
+  },
+
+  // ℹ️ Feature Metadata
+  meta: {
+    name: 'Quote Generator',
+    description: 'Simple inspirational quotes with offline fallback',
+    version: '1.0.0',
+    permissions: [],
+    author: 'Comet Framework',
+    category: 'inspiration',
+    tags: ['quotes', 'inspiration'],
+  },
+
+  // 🔧 BUSINESS LOGIC & HANDLERS
   handlers: {
     getQuote: () => getRandomQuote(),
     getMotivationalQuote: () => getMotivationalQuote(),
   },
 
+  // Main action for combined operations
   mainAction: () => getRandomQuote(),
 
+  // Feature initialization
   init: () => {
-    console.log('[Quote Generator] Feature initialized');
+    console.log('[Quote Generator] Simple feature initialized');
   },
 
-  meta: {
-    name: 'Quote Generator',
-    description: 'Simple inspirational quotes',
-    version: '1.0.0',
-    permissions: [],
+  // Lifecycle hooks
+  lifecycle: {
+    onEnable: () => {
+      console.log('[Quote Generator] Feature enabled');
+    },
+    onDisable: () => {
+      console.log('[Quote Generator] Feature disabled');
+    },
   },
 };
+
+// 💼 HELPER FUNCTIONS (Business Logic Implementation)
 
 /**
  * Get a random quote with basic fallback
@@ -140,4 +204,5 @@ function getMotivationalFallback() {
   };
 }
 
-export default quoteGeneratorModule;
+// Export the feature module
+export default config;

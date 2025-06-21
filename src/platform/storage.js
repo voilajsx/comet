@@ -1,6 +1,5 @@
 /**
- * Comet Framework - Essential Storage Utility (Cross-Browser)
- * Simple storage with auto-loading defaults
+ * Comet Framework - Essential Storage Utility with Auto-reload on Rebuild
  * @module @voilajsx/comet
  * @file src/platform/storage.js
  */
@@ -17,8 +16,7 @@ const browserAPI = (() => {
 })();
 
 /**
- * Essential Comet Storage Manager
- * Auto-loads defaults and provides simple get/set/remove API
+ * Essential Comet Storage Manager with auto-reload defaults
  */
 class CometStorageManager {
   constructor() {
@@ -52,46 +50,47 @@ class CometStorageManager {
   }
 
   /**
-   * Load defaults from defaults.json
+   * Load defaults from defaults.js
    */
   async loadDefaults() {
     if (this.defaultsLoaded) return;
 
     try {
-      const defaultsModule = await import('../defaults.json');
-      this.defaults = defaultsModule.default || {};
+      // Import from JS file instead of JSON for better compatibility
+      const { default: defaults } = await import('../defaults.js');
+      this.defaults = defaults || {};
       this.defaultsLoaded = true;
-      console.log('[Comet Storage] Loaded defaults from defaults.json');
+      console.log(
+        '[Comet Storage] Loaded defaults from defaults.js:',
+        Object.keys(this.defaults)
+      );
     } catch (error) {
+      console.warn('[Comet Storage] Failed to load defaults.js:', error);
       this.defaults = {};
       this.defaultsLoaded = true;
     }
   }
 
   /**
-   * Initialize storage with defaults on first run
+   * Initialize storage with defaults - always reloads on extension reload (batched writes)
    */
   async initializeDefaults() {
     try {
-      const isInitialized = await this.api.storage.local.get(
-        '_defaultsInitialized'
-      );
+      console.log('[Comet Storage] Reloading defaults on extension startup');
 
-      if (isInitialized._defaultsInitialized) {
-        return; // Already initialized
-      }
-
-      // Set defaults for any keys that don't exist
+      // Batch all defaults into a single write operation
       if (Object.keys(this.defaults).length > 0) {
-        for (const [key, value] of Object.entries(this.defaults)) {
-          const existing = await this.api.storage.sync.get(key);
-          if (existing[key] === undefined) {
-            await this.api.storage.sync.set({ [key]: value });
-          }
-        }
-        console.log('[Comet Storage] Initialized with defaults');
+        // Set all defaults in one operation to avoid quota limits
+        await this.api.storage.sync.set(this.defaults);
+        console.log(
+          '[Comet Storage] All defaults applied in batch:',
+          Object.keys(this.defaults)
+        );
+      } else {
+        console.log('[Comet Storage] No defaults to apply');
       }
 
+      // Mark as initialized (local storage doesn't count towards quota)
       await this.api.storage.local.set({ _defaultsInitialized: true });
     } catch (error) {
       console.warn('[Comet Storage] Failed to initialize defaults:', error);
@@ -258,6 +257,28 @@ class CometStorageManager {
    */
   getDefaults() {
     return JSON.parse(JSON.stringify(this.defaults));
+  }
+
+  /**
+   * Force reload defaults (simplified - just reinitialize)
+   * @returns {Promise<boolean>} Success status
+   */
+  async reloadDefaults() {
+    try {
+      // Reset state
+      this.defaultsLoaded = false;
+      this.isInitialized = false;
+      this.defaults = {};
+
+      // Reinitialize (will always reload)
+      await this.initialize();
+
+      console.log('[Comet Storage] Defaults reloaded manually');
+      return true;
+    } catch (error) {
+      console.error('[Comet Storage] Failed to reload defaults:', error);
+      return false;
+    }
   }
 }
 
