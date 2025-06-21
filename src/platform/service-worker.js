@@ -1,5 +1,5 @@
 /**
- * Comet Framework - Essential Service Worker (Background Script)
+ * Comet Framework - Essential Service Worker (Fixed API Version)
  * @module @voilajsx/comet
  * @file src/platform/service-worker.js
  */
@@ -133,7 +133,7 @@ class CometServiceWorkerManager {
       }
     });
 
-    // Universal API proxy - solves CORS issues
+    // Universal API proxy - solves CORS issues (SIMPLE VERSION)
     this.registerMessageHandler('api.fetch', async (data) => {
       return await this.universalApiFetch(data);
     });
@@ -149,78 +149,160 @@ class CometServiceWorkerManager {
   }
 
   /**
-   * Universal API fetch handler - solves CORS issues
+   * Proper Universal API fetch handler with CORS and detailed logging
    */
   async universalApiFetch({
     url,
     method = 'GET',
     headers = {},
     body = null,
-    timeout = 30000,
+    timeout = 15000,
   }) {
-    try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), timeout);
+    console.log(`[API] 🚀 Starting ${method} ${url}`);
+    console.log(`[API] 📋 Headers:`, headers);
+    console.log(`[API] 📦 Body:`, body);
 
+    let controller = null;
+    let timeoutId = null;
+
+    try {
+      // Create abort controller for timeout
+      controller = new AbortController();
+
+      // Set up timeout
+      timeoutId = setTimeout(() => {
+        console.log(`[API] ⏰ Request timeout after ${timeout}ms`);
+        controller.abort();
+      }, timeout);
+
+      // CORS-friendly headers
       const fetchOptions = {
         method: method.toUpperCase(),
         headers: {
+          // Essential headers for CORS
+          Accept: 'application/json, text/plain, */*',
+          'Cache-Control': 'no-cache',
+
+          // Only add Content-Type for body requests to avoid preflight
           ...(body && ['POST', 'PUT', 'PATCH'].includes(method.toUpperCase())
             ? { 'Content-Type': 'application/json' }
             : {}),
+
+          // User provided headers (can override defaults)
           ...headers,
         },
         signal: controller.signal,
+        mode: 'cors',
+        credentials: 'omit', // No credentials to avoid preflight
+        redirect: 'follow',
       };
 
+      // Add body for POST/PUT/PATCH
       if (body && ['POST', 'PUT', 'PATCH'].includes(method.toUpperCase())) {
-        fetchOptions.body = JSON.stringify(body);
+        fetchOptions.body =
+          typeof body === 'string' ? body : JSON.stringify(body);
       }
 
-      console.log(`[Comet API] ${method.toUpperCase()} ${url}`);
+      console.log(`[API] 🔧 Fetch options:`, fetchOptions);
 
+      // Make the request
       const response = await fetch(url, fetchOptions);
-      clearTimeout(timeoutId);
 
-      let data;
-      const contentType = response.headers.get('content-type');
-
-      try {
-        if (contentType && contentType.includes('application/json')) {
-          data = await response.json();
-        } else {
-          data = await response.text();
-          if (data.trim().startsWith('{') || data.trim().startsWith('[')) {
-            try {
-              data = JSON.parse(data);
-            } catch (e) {
-              // Keep as text if JSON parsing fails
-            }
-          }
-        }
-      } catch (error) {
-        console.warn(`[Comet API] Failed to parse response body:`, error);
-        data = null;
+      // Clear timeout on success
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+        timeoutId = null;
       }
 
-      return {
+      console.log(`[API] 📡 Response received:`);
+      console.log(`[API] 📊 Status: ${response.status} ${response.statusText}`);
+      console.log(
+        `[API] 📋 Response Headers:`,
+        Object.fromEntries(response.headers.entries())
+      );
+      console.log(`[API] ✅ OK: ${response.ok}`);
+
+      // Read response
+      const text = await response.text();
+      console.log(`[API] 📖 Response body length: ${text.length} characters`);
+      console.log(
+        `[API] 📄 Response preview (first 200 chars):`,
+        text.substring(0, 200)
+      );
+
+      // Try to parse as JSON
+      let data = text;
+      try {
+        data = JSON.parse(text);
+        console.log(`[API] 🎯 Successfully parsed as JSON`);
+        console.log(
+          `[API] 📊 JSON structure:`,
+          typeof data,
+          Array.isArray(data) ? `Array[${data.length}]` : 'Object'
+        );
+
+        // Log first level keys if it's an object
+        if (typeof data === 'object' && data !== null && !Array.isArray(data)) {
+          console.log(`[API] 🔑 Object keys:`, Object.keys(data));
+        }
+      } catch (parseError) {
+        console.log(
+          `[API] 📝 Keeping as text (not valid JSON):`,
+          parseError.message
+        );
+      }
+
+      const result = {
         success: response.ok,
         status: response.status,
         statusText: response.statusText,
         data: data,
         headers: Object.fromEntries(response.headers.entries()),
       };
-    } catch (error) {
-      console.error(`[Comet API] Request failed:`, error);
 
-      return {
+      console.log(`[API] ✅ Final result:`, {
+        success: result.success,
+        status: result.status,
+        dataType: typeof result.data,
+        hasData: !!result.data,
+      });
+
+      return result;
+    } catch (error) {
+      // Clean up timeout
+      if (timeoutId) clearTimeout(timeoutId);
+
+      console.error(`[API] ❌ Error occurred:`, error);
+      console.error(`[API] 📛 Error name: ${error.name}`);
+      console.error(`[API] 📛 Error message: ${error.message}`);
+
+      // Determine error type
+      const isTimeout = error.name === 'AbortError';
+      const isNetworkError =
+        error.message.includes('fetch') ||
+        error.message.includes('Failed to fetch');
+      const isCorsError =
+        error.message.includes('CORS') ||
+        error.message.includes('cross-origin');
+
+      console.log(`[API] 🔍 Error analysis:`);
+      console.log(`[API] ⏰ Is timeout: ${isTimeout}`);
+      console.log(`[API] 🌐 Is network error: ${isNetworkError}`);
+      console.log(`[API] 🚫 Is CORS error: ${isCorsError}`);
+
+      const result = {
         success: false,
         error: error.message,
-        isTimeout: error.name === 'AbortError',
+        isTimeout,
+        isNetworkError,
+        isCorsError,
         status: 0,
         data: null,
         headers: {},
       };
+
+      console.log(`[API] ❌ Error result:`, result);
+      return result;
     }
   }
 

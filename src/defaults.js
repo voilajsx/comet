@@ -5,7 +5,7 @@
  */
 
 export default {
-  'app-name': 'Comet App',
+  'app-name': 'Comet Two',
   'app-version': '1.0.0',
   'app-description':
     'Minimal but powerful Chrome extension framework built with React and UIKit',
@@ -16,6 +16,6 @@ export default {
   'app-variant': 'light',
   'footer-content': 'Made with ❤️ using Comet Framework',
   'options-variant': 'primary',
-  'options-size': 'lg',
+  'options-size': 'full',
   extensionEnabled: true,
 };

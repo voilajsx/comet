@@ -4,7 +4,7 @@
   "version": "1.0.0",
   "description": "Extension built with Comet Framework",
 
-  "permissions": ["storage", "activeTab", "scripting"],
+  "permissions": ["storage", "activeTab", "scripting", "downloads"],
 
   "background": {
     "service_worker": "service-worker.js",
@@ -15,7 +15,8 @@
     {
       "matches": ["<all_urls>"],
       "js": ["content-script.js"],
-      "run_at": "document_start"
+      "run_at": "document_idle",
+      "all_frames": false
     }
   ],
 

@@ -12,8 +12,10 @@
 
 export { default as pageAnalyzer } from './page-analyzer/index.js';
 export { default as quoteGenerator } from './quote-generator/index.js';
+export { default as weatherWidget } from './weather-widget/index.js';
+export { default as websiteScreenshot } from './website-screenshot/index.js';
 
 // ============================================================================
-// Total features: 2
-// Last generated: 2025-06-21T04:43:38.150Z
+// Total features: 4
+// Last generated: 2025-06-21T15:19:58.993Z
 // ============================================================================

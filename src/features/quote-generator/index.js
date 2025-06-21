@@ -1,154 +1,82 @@
 /**
- * Quote Generator Feature Module - Metadata First Architecture (Simplified)
- * Fetches inspirational quotes with basic fallback
+ * Quote Generator Feature - Simplified Version
  * @module @voilajsx/comet
  * @file src/features/quote-generator/index.js
  */
 
-import { comet } from '@voilajsx/comet/api';
+import { messaging } from '@voilajsx/comet/messaging';
 
-// 📋 METADATA & CONFIGURATION (Easy Access at Top)
-const config = {
-  name: 'quoteGenerator',
+// 🎯 SIMPLE FEATURE CONFIG
+export default {
+  name: 'Quote Generator',
+  version: '1.0.0',
 
-  // 🎨 UI Auto-Discovery Configuration
+  // UI discovery (minimal)
   ui: {
     popup: {
-      tab: {
-        label: 'Quotes',
-        icon: 'Quote',
-        order: 2,
-        requiresTab: false,
-        description: 'Get inspirational quotes',
-      },
+      tab: { label: 'Quotes', icon: 'Quote', order: 2 },
       component: () => import('./components/PopupTab.tsx'),
     },
     options: {
-      panel: {
-        label: 'Quote Generator',
-        icon: 'Quote',
-        section: 'features',
-        order: 3,
-        description: 'Configure quote generation behavior',
-      },
+      panel: { label: 'Quote Generator', icon: 'Quote' },
       component: () => import('./components/OptionsPanel.tsx'),
-    },
-  },
-
-  // ⚙️ Settings Schema (Simplified)
-  settings: {
-    quoteType: {
-      key: 'quoteGenerator.type',
-      default: 'general',
-      type: 'select',
-      label: 'Quote Type',
-      description: 'Choose the type of quotes to display',
-      options: [
-        {
-          value: 'general',
-          label: 'General Quotes',
-          description: 'Wisdom and life advice',
-        },
-        {
-          value: 'motivational',
-          label: 'Motivational Quotes',
-          description: 'Inspiring messages',
-        },
-      ],
-    },
-  },
-
-  // ℹ️ Feature Metadata
-  meta: {
-    name: 'Quote Generator',
-    description: 'Simple inspirational quotes with offline fallback',
-    version: '1.0.0',
-    permissions: [],
-    author: 'Comet Framework',
-    category: 'inspiration',
-    tags: ['quotes', 'inspiration'],
-  },
-
-  // 🔧 BUSINESS LOGIC & HANDLERS
-  handlers: {
-    getQuote: () => getRandomQuote(),
-    getMotivationalQuote: () => getMotivationalQuote(),
-  },
-
-  // Main action for combined operations
-  mainAction: () => getRandomQuote(),
-
-  // Feature initialization
-  init: () => {
-    console.log('[Quote Generator] Simple feature initialized');
-  },
-
-  // Lifecycle hooks
-  lifecycle: {
-    onEnable: () => {
-      console.log('[Quote Generator] Feature enabled');
-    },
-    onDisable: () => {
-      console.log('[Quote Generator] Feature disabled');
     },
   },
 };
 
-// 💼 HELPER FUNCTIONS (Business Logic Implementation)
+// 🚀 SIMPLE API FUNCTIONS (Direct exports)
 
 /**
- * Get a random quote with basic fallback
- * @returns {Promise<object>} Quote result
+ * Get a random quote from API with fallback
  */
-async function getRandomQuote() {
-  // Try primary API first
+export async function getQuote() {
   try {
-    console.log('[Quote Generator] Fetching quote from API');
+    console.log('[Quotes] 🚀 Fetching quote from API');
 
-    const response = await comet.get('https://api.adviceslip.com/advice');
-
-    if (response.ok && response.data?.slip?.advice) {
+    const response = await messaging.sendToBackground({
+      type: 'api.fetch',
+      data: { url: 'https://api.adviceslip.com/advice' },
+    });
+    console.log('[Quotes] 📡 API response:', response);
+    if (response.success && response.data?.data?.slip?.advice) {
+      console.log('[Quotes] ✅ API quote received');
       return {
-        success: true,
-        quote: {
-          text: response.data.slip.advice,
-          author: 'Anonymous',
-          category: 'advice',
-          timestamp: Date.now(),
-        },
+        text: response.data.data.slip.advice,
+        author: 'Anonymous',
+        category: 'advice',
+        source: 'api',
+        timestamp: Date.now(),
       };
+    } else {
+      throw new Error('Invalid API response');
     }
   } catch (error) {
-    console.warn('[Quote Generator] API failed:', error);
+    console.warn('[Quotes] ⚠️ API failed, using fallback:', error.message);
+    return getFallbackQuote();
   }
-
-  // Fallback to local quotes
-  return {
-    success: false,
-    error: 'API unavailable',
-    fallbackQuote: getFallbackQuote(),
-  };
 }
 
 /**
- * Get motivational quote
- * @returns {Promise<object>} Motivational quote result
+ * Get a motivational quote (same API, different fallback)
  */
-async function getMotivationalQuote() {
-  const result = await getRandomQuote();
-
-  if (result.success) {
-    result.quote.category = 'motivational';
-  } else {
-    result.fallbackQuote = getMotivationalFallback();
+export async function getMotivationalQuote() {
+  try {
+    const quote = await getQuote();
+    if (quote.source === 'api') {
+      quote.category = 'motivational';
+      return quote;
+    } else {
+      // Use motivational fallback instead
+      return getMotivationalFallback();
+    }
+  } catch (error) {
+    console.warn('[Quotes] ⚠️ Motivational quote failed:', error.message);
+    return getMotivationalFallback();
   }
-
-  return result;
 }
 
 /**
- * Fallback quotes when API is unavailable
- * @private
+ * Get fallback quote when API is down
  */
 function getFallbackQuote() {
   const quotes = [
@@ -164,11 +92,20 @@ function getFallbackQuote() {
       text: 'The future belongs to those who believe in their dreams.',
       author: 'Eleanor Roosevelt',
     },
+    {
+      text: 'Be yourself; everyone else is already taken.',
+      author: 'Oscar Wilde',
+    },
+    {
+      text: 'In the middle of difficulty lies opportunity.',
+      author: 'Albert Einstein',
+    },
   ];
 
-  const quote = quotes[Math.floor(Math.random() * quotes.length)];
+  const randomQuote = quotes[Math.floor(Math.random() * quotes.length)];
+
   return {
-    ...quote,
+    ...randomQuote,
     category: 'wisdom',
     source: 'fallback',
     timestamp: Date.now(),
@@ -176,8 +113,7 @@ function getFallbackQuote() {
 }
 
 /**
- * Motivational fallback quotes
- * @private
+ * Get motivational fallback quotes
  */
 function getMotivationalFallback() {
   const quotes = [
@@ -193,16 +129,22 @@ function getMotivationalFallback() {
       text: "Don't watch the clock; do what it does. Keep going.",
       author: 'Sam Levenson',
     },
+    {
+      text: "Believe you can and you're halfway there.",
+      author: 'Theodore Roosevelt',
+    },
+    {
+      text: 'The way to get started is to quit talking and begin doing.',
+      author: 'Walt Disney',
+    },
   ];
 
-  const quote = quotes[Math.floor(Math.random() * quotes.length)];
+  const randomQuote = quotes[Math.floor(Math.random() * quotes.length)];
+
   return {
-    ...quote,
+    ...randomQuote,
     category: 'motivational',
     source: 'fallback',
     timestamp: Date.now(),
   };
 }
-
-// Export the feature module
-export default config;

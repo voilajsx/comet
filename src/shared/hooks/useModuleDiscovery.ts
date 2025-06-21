@@ -1,5 +1,5 @@
 /**
- * Module Discovery Hook - Simple auto-generation from module metadata
+ * Module Discovery Hook - Fixed duplicate processing
  * @module @voilajsx/comet
  * @file src/shared/hooks/useModuleDiscovery.ts
  */
@@ -10,12 +10,14 @@ import { messaging } from '@voilajsx/comet/messaging';
 import * as modules from '../../features/index.js';
 
 // Simple icon mapping
-import { FileText, Quote, Home } from 'lucide-react';
+import { FileText, Quote, Home, Camera,Sun } from 'lucide-react';
 
 const ICON_MAP = {
   FileText,
   Quote, 
-  Home
+  Home,
+  Camera,
+Sun 
 };
 
 interface PopupTab {
@@ -35,14 +37,37 @@ interface OptionsNavItem {
 }
 
 /**
- * Simple auto-discovery hook
+ * Fixed auto-discovery hook with duplicate prevention
  */
 export default function useModuleDiscovery() {
   const [loading, setLoading] = useState(true);
   const [extensionEnabled, setExtensionEnabled] = useState(true);
   const [currentTab, setCurrentTab] = useState(null);
   
-  const allModules = useMemo(() => Object.values(modules), []);
+  // Get unique modules by name to prevent duplicates
+  const allModules = useMemo(() => {
+    const moduleValues = Object.values(modules);
+    const uniqueModules = new Map();
+    
+    console.log('[Module Discovery] Raw modules loaded:', moduleValues.length, moduleValues.map(m => m.name));
+    
+    moduleValues.forEach((module, index) => {
+      if (module && module.name) {
+        if (uniqueModules.has(module.name)) {
+          console.warn(`[Module Discovery] Duplicate module detected: ${module.name} at index ${index}, skipping`);
+        } else {
+          uniqueModules.set(module.name, module);
+          console.log(`[Module Discovery] Added unique module: ${module.name}`);
+        }
+      } else {
+        console.warn(`[Module Discovery] Invalid module at index ${index}:`, module);
+      }
+    });
+    
+    const result = Array.from(uniqueModules.values());
+    console.log('[Module Discovery] Final unique modules:', result.map(m => m.name));
+    return result;
+  }, []);
   
   useEffect(() => {
     initializeDiscovery();
@@ -58,6 +83,12 @@ export default function useModuleDiscovery() {
       
       setCurrentTab(tab);
       setExtensionEnabled(enabled);
+      
+      console.log('[Module Discovery] Initialization complete:', {
+        tabSupported: tab ? messaging.isTabSupported(tab) : false,
+        extensionEnabled: enabled,
+        totalModules: allModules.length
+      });
     } catch (error) {
       console.error('[Module Discovery] Failed:', error);
     } finally {
@@ -72,6 +103,7 @@ export default function useModuleDiscovery() {
     // Map known modules to their folder names
     if (module.name === 'pageAnalyzer') return 'page-analyzer';
     if (module.name === 'quoteGenerator') return 'quote-generator';
+    if (module.name === 'websiteScreenshot') return 'website-screenshot';
     
     // Default: convert camelCase to kebab-case
     return module.name.replace(/([A-Z])/g, '-$1').toLowerCase();
@@ -92,18 +124,31 @@ export default function useModuleDiscovery() {
 
   // Generate popup tabs
   const popupTabs = useMemo(() => {
-    if (!extensionEnabled) return [];
+    if (!extensionEnabled) {
+      console.log('[Module Discovery] Extension disabled, no tabs');
+      return [];
+    }
 
     const tabs: PopupTab[] = [];
+    const tabsById = new Map(); // Track tabs by ID to prevent duplicates
 
     console.log('[Module Discovery] Processing modules for popup tabs:', allModules.length);
+    console.log('[Module Discovery] Current tab supported:', currentTab ? messaging.isTabSupported(currentTab) : 'no tab');
+    console.log('[Module Discovery] Current tab URL:', currentTab?.url || 'no URL');
 
     for (const module of allModules) {
       console.log('[Module Discovery] Checking module:', module.name, 'has popup UI:', !!module.ui?.popup);
       
-      if (!module.ui?.popup) continue;
+      if (!module.ui?.popup) {
+        console.log('[Module Discovery] Module', module.name, 'has no popup UI');
+        continue;
+      }
 
       const { tab, component } = module.ui.popup;
+      
+      // Debug tab requirements
+      console.log('[Module Discovery] Module', module.name, 'requiresTab:', tab.requiresTab);
+      console.log('[Module Discovery] Tab supported:', messaging.isTabSupported(currentTab));
       
       // Skip if requires tab but current tab not supported
       if (tab.requiresTab && !messaging.isTabSupported(currentTab)) {
@@ -111,32 +156,44 @@ export default function useModuleDiscovery() {
         continue;
       }
 
-      // Always create the tab entry - don't wait for lazy loading
-      const LazyComponent = React.lazy(component);
       const moduleKey = getModuleFolderName(module);
       
-      console.log('[Module Discovery] Adding tab:', moduleKey, 'label:', tab.label, 'order:', tab.order);
+      // Check for duplicate tab IDs
+      if (tabsById.has(moduleKey)) {
+        console.warn('[Module Discovery] Duplicate tab ID detected:', moduleKey, 'skipping');
+        continue;
+      }
+
+      // Create tab content with error boundary
+      const LazyComponent = React.lazy(component);
       
-      tabs.push({
+      console.log('[Module Discovery] ✅ Adding tab:', moduleKey, 'label:', tab.label, 'order:', tab.order);
+      
+      const tabContent = React.createElement(
+        React.Suspense,
+        { fallback: createLoadingFallback() },
+        React.createElement(LazyComponent, {
+          value: moduleKey,
+          currentTab: currentTab
+        })
+      );
+      
+      const tabEntry = {
         id: moduleKey,
         label: tab.label,
         icon: getIcon(tab.icon),
         requiresTab: tab.requiresTab,
         order: tab.order || 999,
-        content: React.createElement(
-          React.Suspense,
-          { fallback: createLoadingFallback() },
-          React.createElement(LazyComponent, {
-            value: moduleKey,
-            currentTab: currentTab
-          })
-        )
-      });
+        content: tabContent
+      };
+      
+      tabs.push(tabEntry);
+      tabsById.set(moduleKey, tabEntry);
     }
 
     // Sort by order and return immediately - all tabs should be visible
     const sortedTabs = tabs.sort((a, b) => a.order - b.order);
-    console.log('[Module Discovery] Final tabs:', sortedTabs.map(t => ({ id: t.id, label: t.label, order: t.order })));
+    console.log('[Module Discovery] Final tabs:', sortedTabs.map(t => ({ id: t.id, label: t.label, order: t.order, requiresTab: t.requiresTab })));
     
     return sortedTabs;
   }, [allModules, extensionEnabled, currentTab, getModuleFolderName, createLoadingFallback, getIcon]);
@@ -152,11 +209,19 @@ export default function useModuleDiscovery() {
       }
     ];
 
+    const addedKeys = new Set(['general']); // Track added keys to prevent duplicates
+
     for (const module of allModules) {
       if (!module.ui?.options) continue;
 
       const { panel } = module.ui.options;
       const moduleKey = getModuleFolderName(module);
+      
+      // Check for duplicate keys
+      if (addedKeys.has(moduleKey)) {
+        console.warn('[Module Discovery] Duplicate options key detected:', moduleKey, 'skipping');
+        continue;
+      }
       
       navItems.push({
         key: moduleKey,
@@ -164,8 +229,11 @@ export default function useModuleDiscovery() {
         icon: getIcon(panel.icon),
         onClick: () => scrollToSection(moduleKey)
       });
+      
+      addedKeys.add(moduleKey);
     }
 
+    console.log('[Module Discovery] Options navigation items:', navItems.map(item => item.key));
     return navItems;
   }, [allModules, getModuleFolderName, scrollToSection, getIcon]);
 
