@@ -1,5 +1,5 @@
 <p >
-   <img src="public/comet-logo.png" alt="Comet Framework Logo" width="200" />
+   <img src="public/comet_logo.png" alt="Comet Framework Logo" width="200" />
 </p>
 
 # Comet Framework Documentation
