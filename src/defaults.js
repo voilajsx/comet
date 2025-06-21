@@ -5,8 +5,8 @@
  */
 
 export default {
-  'app-name': 'Comet Three',
-  'app-version': '1.0.2',
+  'app-name': 'Comet App',
+  'app-version': '1.0.0',
   'app-description':
     'Minimal but powerful Chrome extension framework built with React and UIKit',
   'app-author': 'Your Name',

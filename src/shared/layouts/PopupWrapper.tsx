@@ -22,8 +22,8 @@ import TabNavigation from '../components/TabNavigation';
  * Auto-discovery popup wrapper with app config integration
  */
 export default function PopupWrapper({
-  extensionName,
-  extensionIcon,
+  extensionName, // Prop override for logo text (will act as overrideName)
+  extensionIcon, // Prop override for logo icon
   size = 'lg',
   variant = 'default',
   className = '',
@@ -36,8 +36,9 @@ export default function PopupWrapper({
   const [activeTab, setActiveTab] = useState('');
   const [isEnabled, setIsEnabled] = useState(true);
   const [appConfig, setAppConfig] = useState({
-    name: 'Comet Extension',
-    icon: 'Zap'
+    appName: 'Comet Extension',      // General app name from storage ('app.name')
+    appIcon: 'Zap',                  // General app icon from storage ('app.icon')
+    popupOverrideLogoText: ''        // Specific text for the popup header logo from storage ('popup.logoOverrideText')
   });
   
   // Auto-discover modules and generate tabs
@@ -48,7 +49,7 @@ export default function PopupWrapper({
     extensionEnabled 
   } = useModuleDiscovery();
 
-  // Initialize popup state
+  // Initialize popup state and load configurations
   useEffect(() => {
     initializePopup();
   }, [popupTabs]);
@@ -59,21 +60,38 @@ export default function PopupWrapper({
       const enabled = await storage.get('extensionEnabled', true);
       setIsEnabled(enabled);
 
-      // Load app configuration if not overridden
-      if (!extensionName || !extensionIcon) {
-        const name = await storage.get('app.name', 'Comet Extension');
-        const icon = await storage.get('app.icon', 'Zap');
-        setAppConfig({ name, icon });
-      }
+      // Load general app configuration from storage
+      const appName = await storage.get('app.name', 'Comet Extension');
+      const appIcon = await storage.get('app.icon', 'Zap');
+      
+      // NEW: Load popup specific logo override text from storage
+      // Crucial part: If 'popup.logoOverrideText' is not set, it explicitly defaults to 'Comet One' here.
+      // If it IS set, even to an empty string, it will retrieve that.
+      const popupOverrideLogoText = await storage.get('popup.logoOverrideText', 'Comet One'); 
 
-      // Set first available tab as default
-      if (popupTabs.length > 0 && !activeTab) {
+      // Update app config state
+      setAppConfig({ 
+        appName, 
+        appIcon, 
+        popupOverrideLogoText 
+      });
+
+      // Set first available tab as default if no active tab or it's invalid
+      if (popupTabs.length > 0) {
         const savedTab = await storage.get('popup.activeTab', popupTabs[0].id);
         const validTab = popupTabs.find(tab => tab.id === savedTab);
         setActiveTab(validTab ? savedTab : popupTabs[0].id);
       }
     } catch (error) {
       console.error('[PopupWrapper] Failed to initialize:', error);
+      // Fallback to default config on error
+      setAppConfig({
+        appName: 'Comet Extension',
+        appIcon: 'Zap',
+        popupOverrideLogoText: 'Comet One' // Ensure fallback also defaults correctly
+      });
+      setIsEnabled(true);
+      setActiveTab('');
     }
   };
 
@@ -106,14 +124,45 @@ export default function PopupWrapper({
     }
   };
 
-  // Generate logo (use app config if not overridden)
-  const logo = customLogo || (
-    <ExtensionLogo 
-      name={extensionName || appConfig.name}
-      icon={extensionIcon || appConfig.icon}
-      size="md"
-    />
-  );
+  // Generate logo using the new priority logic
+  const logo = customLogo || (() => {
+    let logoComponentProps: {
+      size: 'sm' | 'md' | 'lg';
+      name?: string;
+      icon?: string;
+      overrideName?: string;
+    } = { size: 'md' };
+
+    // Priority 1: `extensionName` prop passed to PopupWrapper (acts as an immediate override)
+    if (extensionName) {
+      logoComponentProps.overrideName = extensionName;
+    } 
+    // Priority 2: `popupOverrideLogoText` from storage (acts as an override)
+    // IMPORTANT: Check that it's a non-empty string to avoid using '' as an override.
+    else if (typeof appConfig.popupOverrideLogoText === 'string' && appConfig.popupOverrideLogoText.length > 0) {
+      logoComponentProps.overrideName = appConfig.popupOverrideLogoText;
+    } 
+    // Priority 3: Fallback to general app name from storage
+    else {
+      logoComponentProps.name = appConfig.appName;
+    }
+
+    // Determine the icon for the logo
+    // 1. If `extensionIcon` prop is provided (highest precedence for icon)
+    if (extensionIcon) {
+      logoComponentProps.icon = extensionIcon;
+    } 
+    // 2. If we determined an `overrideName` (from prop or storage), typically no separate icon is shown
+    else if (logoComponentProps.overrideName) { 
+      logoComponentProps.icon = undefined; 
+    }
+    // 3. Otherwise (not in overrideName mode and no extensionIcon prop), use the general app icon from storage
+    else {
+      logoComponentProps.icon = appConfig.appIcon;
+    }
+
+    return <ExtensionLogo {...logoComponentProps} />;
+  })();
 
   // Generate header actions
   const headerActions = customActions || (

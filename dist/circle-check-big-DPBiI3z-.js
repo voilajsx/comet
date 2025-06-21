@@ -1,4 +1,4 @@
-import{f as c}from"./index-CZNxiXtd.js";/**
+import{f as c}from"./index-D2A6gC7_.js";/**
  * @license lucide-react v0.516.0 - ISC
  *
  * This source code is licensed under the ISC license.
@@ -9,4 +9,4 @@ import{f as c}from"./index-CZNxiXtd.js";/**
  * This source code is licensed under the ISC license.
  * See the LICENSE file in the root directory of this source tree.
  */const i=[["path",{d:"M21.801 10A10 10 0 1 1 17 3.335",key:"yps3ct"}],["path",{d:"m9 11 3 3L22 4",key:"1pflzl"}]],r=c("circle-check-big",i);export{r as C,o as a};
-//# sourceMappingURL=circle-check-big-B9-4b270.js.map
+//# sourceMappingURL=circle-check-big-DPBiI3z-.js.map

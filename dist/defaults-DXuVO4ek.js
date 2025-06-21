@@ -1,0 +1,2 @@
+const e={"app-name":"Comet App","app-version":"1.0.0","app-description":"Minimal but powerful Chrome extension framework built with React and UIKit","app-author":"Your Name","app-website":"https://github.com/your-username/your-extension","app-icon":"Zap","app-theme":"","app-variant":"light","footer-content":"Made with ❤️ using Comet Framework","options-variant":"primary","options-size":"lg",extensionEnabled:!0};export{e as default};
+//# sourceMappingURL=defaults-DXuVO4ek.js.map
