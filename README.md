@@ -2,8 +2,6 @@
    <img src="public/comet_logo.png" alt="Comet Framework Logo" width="200" />
 </p>
 
-## What is Comet?
-
 Comet is a **metadata-first cross-browser extension framework** with **auto-discovery** architecture. Features self-register through declarative metadata, and the framework automatically builds UI, handles messaging, and manages configuration.
 
 ### Our Philosophy
@@ -14,6 +12,7 @@ At its core, Comet is built on principles designed to empower developers and tea
 - **Scalability & Extensibility:** Code should grow with your project, not against it. Our architecture ensures your codebase remains scalable and extensible, minimizing breaking changes as you add new functionality.
 - **Module & Team Autonomy:** Comet fosters independent module development. By providing clear boundaries and self-registering components, it enables individual contributors and teams to work autonomously and efficiently.
 - **Super Simple Setup & Clean Conventions:** Getting started shouldn't be a hurdle. Comet offers a super simple setup process, coupled with clean and consistent conventions that make development intuitive, maintainable, and predictable.
+- **Empowering AI-Assisted Development:** Our structured, metadata-first approach ensures that Comet is highly interpretable by Large Language Models (LLMs), effectively making your documentation a direct input for AI-powered code generation.
 
 **Key Benefits:**
 
@@ -25,6 +24,7 @@ At its core, Comet is built on principles designed to empower developers and tea
 - **Theme-Aware UIKit:** Leverage professional, adaptive UI components that ensure a consistent look and feel across all themes.
 - **Automated Cross-Browser Compatibility:** Develop a single codebase that automatically adapts to Chrome, Firefox, Edge, and Opera, handling Manifest V3 and browser API differences.
 - **Structured Feature Lifecycle:** Manage feature logic cleanly with dedicated `init` and `lifecycle` hooks.
+- **LLM-Ready Code Generation:** Leverage Large Language Models to rapidly scaffold new features and components by simply feeding them this documentation, drastically accelerating development.
 
 ---
 
