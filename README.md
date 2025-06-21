@@ -1,7 +1,5 @@
-<p align="center">
-  <a href="https://github.com/your-org/your-repo-name"> <!-- Replace with your actual repository URL -->
-    <img src="https://i.ibb.co/rK8CWRx5/comet-logo.png" alt="Comet Framework Logo" width="200" />
-  </a>
+<p >
+   <img src="public/comet-logo.png" alt="Comet Framework Logo" width="200" />
 </p>
 
 # Comet Framework Documentation
