@@ -2,7 +2,7 @@
    <img src="public/comet_logo.png" alt="Comet Framework Logo" width="200" />
 </p>
 
-Comet is an AI-ready, metadata-first cross-browser extension framework built for rapid development, modular architecture, and enterprise-grade consistency. Features self-register through declarative metadata, while the framework automatically generates UI, handles cross-browser compatibility, and manages configuration with live reloads.
+Comet is an AI-ready, metadata-first cross-browser extension framework built for **rapid development, modular architecture, and enterprise-grade consistency**. Features self-register through declarative metadata, while the framework automatically generates UI, handles cross-browser compatibility, and manages configuration with live reloads.
 
 ### **Philosophy**
 
