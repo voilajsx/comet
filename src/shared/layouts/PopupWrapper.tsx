@@ -226,7 +226,7 @@ export default function PopupWrapper({
         variant="ghost"
         size="sm"
         onClick={handleSettingsClick}
-        className="h-6 w-6 p-0"
+        className="h-6 w-6 p-0 text-muted-foreground  "
       >
         <Settings className="h-4 w-4" />
       </Button>
@@ -331,7 +331,7 @@ export default function PopupWrapper({
     <PopupLayout
       variant={variant}
       size={size}
-      className={`border-0 ${className}`}
+      className={`border-0 rounded-none ${className}`}
       logo={logo}
       headerActions={headerActions}
       footer={footerContent}

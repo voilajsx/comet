@@ -1,0 +1,62 @@
+/**
+ * Comet Framework - Default Configuration
+ * @module @voilajsx/comet
+ * @file src/defaults.ts
+ */
+
+const defaults = {
+  // Debug Configuration
+  'debug-enabled': false, // Toggle all debug logs
+
+  // App Configuration
+  'app-name': 'Comet Tw0',
+  'app-version': '1.0.0',
+  'app-description': 'Minimal but powerful Chrome extension framework built with React and UIKit',
+  'app-author': 'Your Name',
+  'app-website': 'https://github.com/your-username/your-extension',
+  'app-icon': 'Zap',
+  'app-theme': '',
+  'app-variant': 'light',
+
+  // Footer Configuration
+  'footer-content': 'Made with ❤️ using Comet Framework',
+
+  // Layout Configuration
+  'options-variant': 'primary',
+  'options-size': 'full',
+
+  // Extension State
+  extensionEnabled: true,
+} as const;
+
+// ============================================================================
+// Type interface for TypeScript consumers
+// ⚠️  IMPORTANT: Only modify the defaults object above, NOT this interface
+// This interface is for type safety only - changes here won't affect runtime
+// ============================================================================
+interface DefaultConfig {
+  // Debug Configuration
+  'debug-enabled': boolean;
+
+  // App Configuration
+  'app-name': string;
+  'app-version': string;
+  'app-description': string;
+  'app-author': string;
+  'app-website': string;
+  'app-icon': string;
+  'app-theme': string;
+  'app-variant': 'light' | 'dark';
+
+  // Footer Configuration
+  'footer-content': string;
+
+  // Layout Configuration
+  'options-variant': 'default' | 'primary' | 'black';
+  'options-size': 'sm' | 'md' | 'lg' | 'xl' | 'full';
+
+  // Extension State
+  extensionEnabled: boolean;
+}
+
+export default defaults;

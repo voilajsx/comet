@@ -1,5 +1,5 @@
 /**
- * Enhanced Options Wrapper - Storage-based Variants with UIKit Prop Drilling
+ * Enhanced Options Wrapper - Clean and minimal UX
  * @module @voilajsx/comet
  * @file src/shared/layouts/OptionsWrapper.tsx
  */
@@ -8,11 +8,10 @@ import React, { useState, useEffect } from 'react';
 import { PageLayout, PageHeader, PageContent, PageFooter } from '@voilajsx/uikit/page';
 import { Container } from '@voilajsx/uikit/container';
 import { Button } from '@voilajsx/uikit/button';
-import { Save, RotateCcw, CheckCircle, AlertCircle } from 'lucide-react';
+import { RotateCcw, CheckCircle, AlertCircle } from 'lucide-react';
 
 // Import platform APIs and hooks
 import { storage } from '@voilajsx/comet/storage';
-import { messaging } from '@voilajsx/comet/messaging';
 import useModuleDiscovery from '@/shared/hooks/useModuleDiscovery';
 
 // Import shared components
@@ -75,27 +74,29 @@ interface OptionsWrapperProps {
   customFooter?: React.ReactNode;
   
   // Callbacks
-  onSave?: () => void;
   onReset?: () => void;
   
   // Force overrides (bypass storage)
   forceVariant?: 'default' | 'minimal' | 'contained';
   forceSize?: 'sm' | 'md' | 'lg' | 'xl' | 'full';
+  
+  // Action button configuration
+  showResetButton?: boolean; // Default: true
 }
 
 /**
- * Auto-discovery options wrapper with storage-based configuration
+ * Auto-discovery options wrapper with clean UX
  */
 export default function OptionsWrapper({
   customLogo,
   customActions,
   customFooter,
-  onSave,
   onReset,
   forceVariant,
-  forceSize
+  forceSize,
+  showResetButton = true
 }: OptionsWrapperProps = {}) {
-  const [saveResult, setSaveResult] = useState(null);
+  const [resetResult, setResetResult] = useState(null);
   const [layoutConfig, setLayoutConfig] = useState({
     variant: 'default',
     size: 'full'
@@ -139,10 +140,6 @@ export default function OptionsWrapper({
         sizeType: typeof size
       });
       
-      // Check what's actually in storage
-      const allDefaults = storage.getDefaults();
-      console.log('[OptionsWrapper] Current defaults in storage:', allDefaults);
-      
       setLayoutConfig({ variant, size });
       
       console.log('[OptionsWrapper] Applied layout config:', JSON.stringify({ variant, size }));
@@ -157,11 +154,11 @@ export default function OptionsWrapper({
 
   // Auto-dismiss status after 3 seconds
   useEffect(() => {
-    if (saveResult) {
-      const timer = setTimeout(() => setSaveResult(null), 3000);
+    if (resetResult) {
+      const timer = setTimeout(() => setResetResult(null), 3000);
       return () => clearTimeout(timer);
     }
-  }, [saveResult]);
+  }, [resetResult]);
 
   // Enhanced scroll to section with proper header offset
   const scrollToSection = (sectionId: string) => {
@@ -177,32 +174,6 @@ export default function OptionsWrapper({
     }
   };
 
-  // Handle save all settings
-  const saveAllSettings = async () => {
-    if (onSave) {
-      onSave();
-      return;
-    }
-
-    try {
-      await messaging.sendToBackground({
-        type: 'settingsUpdated',
-        data: { timestamp: Date.now() }
-      });
-      
-      setSaveResult({
-        type: 'success',
-        message: 'Saved'
-      });
-    } catch (error) {
-      console.warn('Could not notify background script:', error);
-      setSaveResult({
-        type: 'success',
-        message: 'Saved'
-      });
-    }
-  };
-
   // Handle reset all settings
   const resetAllSettings = async () => {
     if (onReset) {
@@ -211,7 +182,7 @@ export default function OptionsWrapper({
     }
 
     try {
-      setSaveResult({ type: 'success', message: 'Resetting...' });
+      setResetResult({ type: 'success', message: 'Resetting all settings...' });
 
       // Clear ALL storage
       await storage.clear();
@@ -222,7 +193,7 @@ export default function OptionsWrapper({
         await storage.set(key, value);
       }
 
-      setSaveResult({ type: 'success', message: 'Reset complete - reloading...' });
+      setResetResult({ type: 'success', message: 'Reset complete - reloading...' });
 
       // Reload page to see changes
       setTimeout(() => {
@@ -231,33 +202,33 @@ export default function OptionsWrapper({
 
     } catch (error) {
       console.error('[Options] Reset failed:', error);
-      setSaveResult({ type: 'error', message: 'Reset failed' });
+      setResetResult({ type: 'error', message: 'Reset failed' });
     }
   };
 
-  // Get variant-specific styling configs with inline styles
+  // Get variant-specific styling configs
   const getVariantConfig = (variant: string) => {
     switch (variant) {
       case 'primary':
         return {
           logoVariant: 'default',
-          buttonStyle: 'secondary',
           resetButtonStyle: 'outline',
           statusColor: {
             success: 'text-white',
             error: 'text-red-200'
           },
+          autoSaveColor: 'text-white/80',
           headerStyle: {} // UIKit handles primary
         };
       case 'black':
         return {
           logoVariant: 'compact',
-          buttonStyle: 'outline',
           resetButtonStyle: 'ghost',
           statusColor: {
             success: 'text-white',
             error: 'text-red-400'
           },
+          autoSaveColor: 'text-white/70',
           headerStyle: {
             backgroundColor: '#000000',
             color: '#ffffff',
@@ -267,12 +238,12 @@ export default function OptionsWrapper({
       default: // 'default' and others
         return {
           logoVariant: 'default',
-          buttonStyle: 'default',
           resetButtonStyle: 'outline',
           statusColor: {
             success: 'text-green-600',
             error: 'text-destructive'
           },
+          autoSaveColor: 'text-muted-foreground',
           headerStyle: {
             backgroundColor: 'hsl(var(--background))',
             color: 'hsl(var(--foreground))',
@@ -284,47 +255,37 @@ export default function OptionsWrapper({
 
   const variantConfig = getVariantConfig(layoutConfig.variant);
 
-  // Debug logging for variant config  
-  console.log('[OptionsWrapper] Current layout config:', JSON.stringify(layoutConfig));
-  console.log('[OptionsWrapper] Computed variant config:', JSON.stringify(variantConfig));
-
-  // Generate header actions with variant-aware styling
+  // Generate header actions - clean and minimal
   const headerActions = customActions || (
     <div className="flex items-center gap-3">
-      {/* Status Text */}
-      {saveResult && (
+      
+      {/* Reset Status (only when resetting) */}
+      {resetResult && (
         <div className="flex items-center gap-2">
-          {saveResult.type === 'success' ? (
+          {resetResult.type === 'success' ? (
             <CheckCircle className="h-4 w-4 text-green-600" />
           ) : (
             <AlertCircle className="h-4 w-4 text-destructive" />
           )}
-          <span className={`text-sm font-medium ${variantConfig.statusColor[saveResult.type]}`}>
-            {saveResult.message}
+          <span className={`text-sm font-medium ${variantConfig.statusColor[resetResult.type]}`}>
+            {resetResult.message}
           </span>
         </div>
       )}
       
-      {/* Action Buttons - Variant-aware styling */}
-      <Button
-        variant={variantConfig.resetButtonStyle}
-        onClick={resetAllSettings}
-        size="sm"
-        className="gap-2"
-      >
-        <RotateCcw className="h-4 w-4" />
-        Reset All
-      </Button>
+      {/* Reset All Button */}
+      {showResetButton && (
+        <Button
+          variant={variantConfig.resetButtonStyle}
+          onClick={resetAllSettings}
+          size="sm"
+          className="gap-2"
+        >
+          <RotateCcw className="h-4 w-4" />
+          Reset All
+        </Button>
+      )}
       
-      <Button
-        variant={variantConfig.buttonStyle}
-        onClick={saveAllSettings}
-        size="sm"
-        className="gap-2"
-      >
-        <Save className="h-4 w-4" />
-        Save All
-      </Button>
     </div>
   );
 
@@ -334,7 +295,7 @@ export default function OptionsWrapper({
       overrideName="Settings"
       size="lg"
       variant={variantConfig.logoVariant}
-      headerVariant={layoutConfig.variant} // Pass header variant for adaptive styling
+      headerVariant={layoutConfig.variant}
     />
   );
 
@@ -384,10 +345,9 @@ export default function OptionsWrapper({
 
   return (
     <div className="min-h-screen bg-background">
-      {/* UIKit handles prop drilling automatically */}
       <PageLayout variant={layoutConfig.variant} size={layoutConfig.size}>
         
-        {/* Header - explicit variant with inline style override */}
+        {/* Header with clean UX */}
         <PageHeader 
           variant={layoutConfig.variant} 
           sticky={true}
@@ -399,7 +359,7 @@ export default function OptionsWrapper({
           </div>
         </PageHeader>
 
-        {/* Content - inherits variant and size from PageLayout */}
+        {/* Content */}
         <PageContent className="py-6">
           <Container 
             sidebar="left"
@@ -411,7 +371,7 @@ export default function OptionsWrapper({
           </Container>
         </PageContent>
 
-        {/* Footer - explicit variant to ensure styling */}
+        {/* Footer */}
         <PageFooter variant={layoutConfig.variant} className="bg-card border-0">
           {customFooter || (
             <ExtensionFooter 

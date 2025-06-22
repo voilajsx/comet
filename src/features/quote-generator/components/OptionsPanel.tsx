@@ -58,10 +58,11 @@ export default function QuoteGeneratorOptionsPanel() {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-3">
-            <Label htmlFor="quote-type-select" className="text-base font-medium">
+            <Label htmlFor="quote-type-select" className="text-base font-medium pb-3">
               Quote Category
             </Label>
-            <Select value={quoteType} onValueChange={updateQuoteType}>
+            <div class="pt-3">
+ <Select value={quoteType} className="" onValueChange={updateQuoteType}>
               <SelectTrigger id="quote-type-select">
                 <SelectValue />
               </SelectTrigger>
@@ -69,7 +70,7 @@ export default function QuoteGeneratorOptionsPanel() {
                 <SelectItem value="general">
                   <div>
                     <div className="font-medium">General Quotes</div>
-                    <div className="text-xs text-muted-foreground">
+                    <div className="text-xs ">
                       Wisdom and life advice
                     </div>
                   </div>
@@ -77,13 +78,15 @@ export default function QuoteGeneratorOptionsPanel() {
                 <SelectItem value="motivational">
                   <div>
                     <div className="font-medium">Motivational Quotes</div>
-                    <div className="text-xs text-muted-foreground">
+                    <div className="text-xs ">
                       Inspiring and uplifting messages
                     </div>
                   </div>
                 </SelectItem>
               </SelectContent>
             </Select>
+            </div>
+           
           </div>
         </CardContent>
       </Card>

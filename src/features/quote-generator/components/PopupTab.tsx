@@ -1,5 +1,5 @@
 /**
- * Quote Generator Popup Tab - Simplified with Direct Imports
+ * Quote Generator Popup Tab - Improved TypeScript Version
  * @module @voilajsx/comet
  * @file src/features/quote-generator/components/PopupTab.tsx
  */
@@ -15,44 +15,119 @@ import { Quote, Loader2, CheckCircle, AlertCircle, RefreshCw } from 'lucide-reac
 import { storage } from '@voilajsx/comet/storage';
 
 // ✅ DIRECT IMPORTS - Simple and clean!
-import { getQuote, getMotivationalQuote } from '../index.js';
+import { getQuote, getMotivationalQuote } from '../index.ts';
+
+// Type definitions
+interface QuoteData {
+  text: string;
+  author: string;
+  category: 'advice' | 'wisdom' | 'motivational';
+  source: 'api' | 'fallback';
+  timestamp: number;
+}
+
+interface StatusResult {
+  type: 'success' | 'error';
+  message: string;
+}
+
+interface PopupTabProps {
+  value: string;
+  currentTab?: chrome.tabs.Tab;
+}
+
+interface QuoteTypeConfig {
+  title: string;
+  desc: string;
+  buttonText: string;
+}
+
+type QuoteType = 'general' | 'motivational';
 
 /**
- * Status alert component
+ * Status alert component with auto-dismiss
  */
-function StatusAlert({ result, onDismiss }) {
-  React.useEffect(() => {
-    if (result && onDismiss) {
-      const timer = setTimeout(onDismiss, 2000);
+function StatusAlert({ 
+  result, 
+  onDismiss,
+  autoHide = true,
+  hideDelay = 2000 
+}: {
+  result: StatusResult | null;
+  onDismiss: () => void;
+  autoHide?: boolean;
+  hideDelay?: number;
+}) {
+  useEffect(() => {
+    if (result && autoHide && onDismiss) {
+      const timer = setTimeout(onDismiss, hideDelay);
       return () => clearTimeout(timer);
     }
-  }, [result, onDismiss]);
+  }, [result, onDismiss, autoHide, hideDelay]);
 
   if (!result) return null;
 
   const Icon = result.type === 'success' ? CheckCircle : AlertCircle;
-  const variant = result.type === 'success' ? 'default' : 'destructive';
 
   return (
-    <Alert variant={variant}>
+    <Alert variant={result.type === 'success' ? 'default' : 'destructive'}>
       <Icon className="h-4 w-4" />
       <AlertDescription>{result.message}</AlertDescription>
     </Alert>
   );
 }
 
-export default function QuoteGeneratorTab({ value }) {
-  const [isLoading, setIsLoading] = useState(false);
-  const [status, setStatus] = useState(null);
-  const [currentQuote, setCurrentQuote] = useState(null);
-  const [quoteType, setQuoteType] = useState('general');
+/**
+ * Quote display component
+ */
+function QuoteDisplay({ quote }: { quote: QuoteData }) {
+  return (
+    <div className="space-y-3">
+      <Separator />
+      
+      <div className="bg-muted/50 p-4 rounded border">
+        <div className="text-sm italic mb-3 leading-relaxed">
+          "{quote.text}"
+        </div>
+        
+        <div className="flex items-center justify-between text-xs text-muted-foreground">
+          <span>— {quote.author}</span>
+          <div className="flex gap-2">
+            <Badge variant="outline">
+              {quote.category}
+            </Badge>
+            <Badge variant={quote.source === 'api' ? 'default' : 'secondary'}>
+              {quote.source === 'api' ? 'Live' : 'Offline'}
+            </Badge>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
-  // Load quote type setting
+export default function QuoteGeneratorTab({ value, currentTab }: PopupTabProps) {
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [status, setStatus] = useState<StatusResult | null>(null);
+  const [currentQuote, setCurrentQuote] = useState<QuoteData | null>(null);
+  const [quoteType, setQuoteType] = useState<QuoteType>('general');
+
+  // Load quote type setting on mount
   useEffect(() => {
-    storage.get('quoteGenerator.type', 'general').then(setQuoteType);
+    loadQuoteType();
   }, []);
 
-  const handleGetQuote = async () => {
+  const loadQuoteType = async (): Promise<void> => {
+    try {
+      const type = await storage.get('quoteGenerator.type', 'general') as QuoteType;
+      setQuoteType(type);
+    } catch (error: unknown) {
+      console.warn('[Quote PopupTab] Failed to load quote type:', error);
+      setQuoteType('general');
+    }
+  };
+
+  const handleGetQuote = async (): Promise<void> => {
     console.log('[Quote PopupTab] 🚀 Getting quote, type:', quoteType);
     
     setIsLoading(true);
@@ -60,7 +135,7 @@ export default function QuoteGeneratorTab({ value }) {
 
     try {
       // ✅ DIRECT FUNCTION CALL - No complex messaging!
-      const quote = quoteType === 'motivational' 
+      const quote: QuoteData = quoteType === 'motivational' 
         ? await getMotivationalQuote()
         : await getQuote();
 
@@ -69,36 +144,45 @@ export default function QuoteGeneratorTab({ value }) {
       setCurrentQuote(quote);
       setStatus({
         type: 'success',
-        message: quote.source === 'api' ? 'Quote fetched!' : 'Offline quote'
+        message: quote.source === 'api' ? 'Fresh quote fetched!' : 'Offline quote loaded'
       });
 
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('[Quote PopupTab] ❌ Error:', error);
       setStatus({
         type: 'error',
-        message: 'Failed to get quote'
+        message: 'Failed to get quote. Please try again.'
       });
     } finally {
       setIsLoading(false);
     }
   };
 
-  const labels = {
-    general: { title: 'General Quote', desc: 'Wisdom and life advice' },
-    motivational: { title: 'Motivational Quote', desc: 'Inspiring messages' }
+  // Quote type configuration
+  const quoteTypeConfig: Record<QuoteType, QuoteTypeConfig> = {
+    general: { 
+      title: 'General Quote', 
+      desc: 'Wisdom and life advice',
+      buttonText: 'Get Wisdom Quote'
+    },
+    motivational: { 
+      title: 'Motivational Quote', 
+      desc: 'Inspiring messages for motivation',
+      buttonText: 'Get Motivational Quote'
+    }
   };
 
-  const current = labels[quoteType] || labels.general;
+  const currentConfig = quoteTypeConfig[quoteType];
 
   return (
-    <TabsContent value={value} className="mt-0">
+    <TabsContent value={value}>
       <Card>
-        <CardHeader className="pb-3">
+        <CardHeader>
           <CardTitle className="text-base flex items-center gap-2">
             <Quote className="w-4 h-4" />
-            {current.title}
+            {currentConfig.title}
           </CardTitle>
-          <p className="text-xs text-muted-foreground">{current.desc}</p>
+          <p className="text-xs text-muted-foreground">{currentConfig.desc}</p>
         </CardHeader>
         
         <CardContent className="space-y-4">
@@ -116,49 +200,28 @@ export default function QuoteGeneratorTab({ value }) {
             ) : (
               <>
                 <RefreshCw className="w-4 h-4 mr-2" />
-                Get New Quote
+                {currentConfig.buttonText}
               </>
             )}
           </Button>
 
-          {/* Status */}
+          {/* Status Alert */}
           <StatusAlert 
             result={status} 
-            onDismiss={() => setStatus(null)} 
+            onDismiss={() => setStatus(null)}
+            autoHide={true}
+            hideDelay={3000}
           />
 
           {/* Quote Display */}
-          {currentQuote && (
-            <div className="space-y-3">
-              <Separator />
-              
-              <div className="bg-muted/50 p-4 rounded border">
-                <div className="text-sm italic mb-3 leading-relaxed">
-                  "{currentQuote.text}"
-                </div>
-                
-                <div className="flex items-center justify-between text-xs text-muted-foreground">
-                  <span>— {currentQuote.author}</span>
-                  <div className="flex gap-2">
-                    <Badge variant="outline" className="text-xs">
-                      {currentQuote.category}
-                    </Badge>
-                    <Badge 
-                      variant={currentQuote.source === 'api' ? 'default' : 'secondary'} 
-                      className="text-xs"
-                    >
-                      {currentQuote.source === 'api' ? 'Live' : 'Offline'}
-                    </Badge>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
+          {currentQuote && <QuoteDisplay quote={currentQuote} />}
 
           {/* Helper text */}
-          <p className="text-center text-xs text-muted-foreground">
-            Change quote type in settings
-          </p>
+          <div className="text-center">
+            <p className="text-xs text-muted-foreground">
+              Change quote type in extension settings
+            </p>
+          </div>
         </CardContent>
       </Card>
     </TabsContent>

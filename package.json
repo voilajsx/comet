@@ -20,23 +20,23 @@
     "framework",
     "uikit",
     "comet",
-    "voilajsx"
+    "voilajsx",
+    "typescript"
   ],
   "scripts": {
-    "dev": "npm run build:main -- --watch",
-    "dev:content": "npm run build:content -- --watch",
-    "dev:all": "concurrently \"npm run dev\" \"npm run dev:content\"",
     "build": "npm run build:main && npm run build:content && npm run post-build",
     "build:main": "vite build",
-    "build:content": "vite build --config vite.content-script.config.js",
-    "watch": "npm run dev:all",
-    "preview": "vite preview",
+    "build:content": "vite build --config vite.content-script.config.ts",
     "package": "npm run build && cd dist && zip -r ../comet-extension.zip .",
     "clean": "rm -rf dist && rm -f comet-extension.zip",
     "post-build": "npm run copy-assets && npm run fix-paths",
     "copy-assets": "cp manifest.json dist/ && mkdir -p dist/icons && cp public/icons/* dist/icons/ 2>/dev/null || true",
     "fix-paths": "mv dist/src/pages/popup/index.html dist/popup.html 2>/dev/null || true && mv dist/src/pages/options/index.html dist/options.html 2>/dev/null || true && rm -rf dist/src 2>/dev/null || true",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "type-check:watch": "tsc --noEmit --watch",
+    "dev": "vite",
+    "dev:content": "vite build --config vite.content-script.config.ts --watch",
+    "dev:with-types": "npm run type-check && vite"
   },
   "dependencies": {
     "@voilajsx/uikit": "latest",
