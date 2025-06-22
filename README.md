@@ -2,48 +2,35 @@
    <img src="public/comet_logo.png" alt="Comet Framework Logo" width="200" />
 </p>
 
-Comet is an AI-ready, metadata-first cross-browser extension framework built for **rapid development, modular architecture, and enterprise-grade consistency**. Features self-register through declarative metadata, while the framework automatically generates UI, handles cross-browser compatibility, and manages configuration with live reloads.
+# Comet Framework
 
-### **Philosophy**
+**Enterprise-grade, modular, AI-ready extension framework.**
 
-Comet is built on four core pillars that solve the biggest pain points in extension development:
+Build professional cross-browser extensions with consistent quality, smart modularity, and AI-powered development.
 
-- **🤖 AI-Ready Development:** Structured, metadata-first approach makes Comet highly interpretable by LLMs, enabling rapid AI-assisted feature generation, code scaffolding, and automated development workflows.
+## Why Comet?
 
-- **🚀 Rapid Development:** Build extensions 10x faster with auto-discovery architecture, live config reloads, and pre-built platform utilities. Focus on feature logic, not boilerplate.
+**Enterprise Extensions Need:** Stability, consistency, and maintainability across large teams and multiple projects.
 
-- **🧱 Modular Architecture:** Features are completely self-contained and independent. Add/remove functionality by simply dropping folders. Enable/disable features with a single underscore prefix.
+**Current Problems:**
 
-- **🎨 Enterprise-Grade Consistency:** Professional theme system with 6 adaptive themes, semantic color variables, and layout wrappers ensure consistent UI/UX across all components and team members.
+- UI inconsistency across team members creates unprofessional results
+- Feature changes break existing functionality
+- Too much flexibility leads to code chaos and maintenance nightmares
+- AI tools can't generate accurate code with inconsistent patterns
 
-### **Key Advantages**
+**Comet's Solution:** Enforced consistency through structured patterns that humans follow and AI understands perfectly.
 
-**🎯 Unique to Comet:**
+## Key Benefits
 
-- **Metadata-First Auto-Discovery:** Features self-register, UI auto-generates, zero manual wiring
-- **Live Configuration Reloads:** Edit `defaults.ts` → rebuild → see changes instantly
-- **Cross-Browser Platform Layer:** Pre-built storage, messaging, and CORS-free API utilities
-- **Professional Theme System:** 6 enterprise themes with automatic light/dark adaptation
+- **Enterprise-Grade Consistency:** Standardized UI components and coding patterns prevent deviations - impossible to create inconsistent interfaces
+- **Safe Modularity:** Clear folder structure and true plugin architecture - features can't break each other, easy plug-in/plug-out
+- **AI-Accelerated Development:** Predictable patterns let AI generate accurate, working code that follows your team's standards
+- **Maintainable at Scale:** Structured file organization and enforced conventions make large codebases manageable
 
-**⚡ Best-in-Class:**
+## Perfect For
 
-- **Zero-Config Setup:** Single command to working extension
-- **Fastest Iteration Cycle:** Change config → rebuild → instant results
-- **Plugin Architecture:** Drop-in features with folder-based enable/disable
-- **Production-Ready Components:** Theme-aware UIKit with consistent design patterns
-
-**🌐 Industry Standard:**
-
-- **Modern Tooling:** TypeScript + React + Vite
-- **Cross-Browser Support:** Chrome, Firefox, Edge, Opera from single codebase
-- **Manifest V3 Ready:** Automatic compatibility handling
-
-### **Perfect For**
-
-- **React developers** wanting Chrome extension development without the complexity
-- **Teams** needing consistent UI/UX across multiple extensions
-- **Rapid prototyping** of extension ideas with professional polish
-- **AI-assisted development** with structured, predictable patterns
+Teams needing consistent extension quality, organizations building multiple browser tools, and developers who want AI to speed up development 10x without breaking anything or compromising quality.
 
 # Comet Framework Documentation
 
