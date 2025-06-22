@@ -9,15 +9,20 @@ import { storage } from '@voilajsx/comet/storage';
 import { messaging } from '@voilajsx/comet/messaging';
 import * as modules from '../../features/index.js';
 
-// Simple icon mapping
-import { FileText, Quote, Home, Camera,Sun } from 'lucide-react';
+// Simple icon mapping - Top 10 most useful icons
+import { FileText, Quote, Home, Camera, Sun, Smile, Heart, Star, Settings, Zap } from 'lucide-react';
 
 const ICON_MAP = {
   FileText,
   Quote, 
   Home,
   Camera,
-Sun 
+  Sun,
+  Smile,
+  Heart,
+  Star,
+  Settings,
+  Zap
 };
 
 interface PopupTab {
@@ -104,6 +109,7 @@ export default function useModuleDiscovery() {
     if (module.name === 'pageAnalyzer') return 'page-analyzer';
     if (module.name === 'quoteGenerator') return 'quote-generator';
     if (module.name === 'websiteScreenshot') return 'website-screenshot';
+    if (module.name === 'helloWorld') return 'hello-world';
     
     // Default: convert camelCase to kebab-case
     return module.name.replace(/([A-Z])/g, '-$1').toLowerCase();

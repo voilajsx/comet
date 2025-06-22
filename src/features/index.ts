@@ -85,22 +85,21 @@ export interface ModuleConfig {
 // 🚀 AUTO-DISCOVERED ACTIVE FEATURES - Generated at build time
 // ============================================================================
 
+export { default as helloWorld } from './hello-world/index.js';
 export { default as pageAnalyzer } from './page-analyzer/index.js';
-export { default as quoteGenerator } from './quote-generator/index.js';
-export { default as weatherWidget } from './weather-widget/index.js';
 
 // ============================================================================
 // 💤 DISABLED FEATURES (underscore prefix)
 // To enable any feature: Remove underscore from folder name
 // ============================================================================
-// _website-screenshot (disabled - remove underscore to enable)
+// _quote-generator (disabled - remove underscore to enable)
 
 
 
 // ============================================================================
-// Total features: 3
+// Total features: 2
 // Disabled features: 1
-// Last generated: 2025-06-22T05:05:39.726Z
+// Last generated: 2025-06-22T11:25:51.247Z
 // 
 // 🚀 Quick Commands:
 // Enable feature:  mv src/features/_feature-name src/features/feature-name

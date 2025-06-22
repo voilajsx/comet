@@ -4,12 +4,16 @@
  * @file src/defaults.ts
  */
 
+// ⚠️ WARNING: All values here are reloaded on every extension restart!
+// ✅ Put: App config, theme, layout settings
+// ❌ Don't put: User data, click counts, user input (will be lost!)
+
 const defaults = {
   // Debug Configuration
   'debug-enabled': false, // Toggle all debug logs
 
   // App Configuration
-  'app-name': 'Comet Tw0',
+  'app-name': 'Comet One',
   'app-version': '1.0.0',
   'app-description': 'Minimal but powerful Chrome extension framework built with React and UIKit',
   'app-author': 'Your Name',
@@ -27,12 +31,11 @@ const defaults = {
 
   // Extension State
   extensionEnabled: true,
+
 } as const;
 
 // ============================================================================
 // Type interface for TypeScript consumers
-// ⚠️  IMPORTANT: Only modify the defaults object above, NOT this interface
-// This interface is for type safety only - changes here won't affect runtime
 // ============================================================================
 interface DefaultConfig {
   // Debug Configuration

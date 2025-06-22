@@ -139,7 +139,8 @@ export default function GeneralSettingsPanel() {
             <Label htmlFor="theme-select" className="text-sm font-medium">
               Theme
             </Label>
-            <Select value={theme} onValueChange={setTheme}>
+            <div class="pt-2">
+              <Select value={theme} onValueChange={setTheme}>
               <SelectTrigger id="theme-select">
                 <SelectValue />
               </SelectTrigger>
@@ -151,6 +152,8 @@ export default function GeneralSettingsPanel() {
                 ))}
               </SelectContent>
             </Select>
+            </div>
+            
           </div>
 
           {/* Dark Mode Toggle - Auto-save */}
