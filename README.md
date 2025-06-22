@@ -45,39 +45,41 @@ Comet is built on four core pillars that solve the biggest pain points in extens
 - **Rapid prototyping** of extension ideas with professional polish
 - **AI-assisted development** with structured, predictable patterns
 
+# Comet Framework Documentation
+
 ## Table of Contents
 
 ### 1. Getting Started
 
-1.1. Quick Start - Installation & first extension  
-1.2. Core Concepts - Metadata-first architecture & auto-discovery overview  
-1.3. Project Structure - File organization & conventions
+- [1.1. Quick Start - Installation & first extension](#11-quick-start---installation--first-extension)
+- [1.2. Core Concepts - Metadata-first architecture & auto-discovery overview](#12-core-concepts---metadata-first-architecture--auto-discovery-overview)
+- [1.3. Project Structure - File organization & conventions](#13-project-structure---file-organization--conventions)
 
 ### 2. Learn by Example
 
-2.1. Example 1: Hello World - Foundation (metadata, basic UI, storage fundamentals)  
-2.2. Example 2: Page Analyzer - Real-world patterns (messaging, APIs, complex UI)  
-2.3. Understanding the System - Deep dive into feature module patterns
+- [2.1. Example 1: Hello World - Foundation (metadata, basic UI, storage fundamentals)](#21-example-1-hello-world---foundation-metadata-basic-ui-storage-fundamentals)
+- [2.2. Example 2: Page Analyzer - Real-world patterns (messaging, APIs, complex UI)](#22-example-2-page-analyzer---real-world-patterns-messaging-apis-complex-ui)
+- [2.3. Understanding the System - Deep dive into feature module patterns](#23-understanding-the-system---deep-dive-into-feature-module-patterns)
 
 > 💡 **Additional Examples:** Check the Quote Generator feature for API patterns and advanced storage strategies
 
 ### 3. Building Your Own
 
-3.1. Feature Module System - Create custom features from scratch  
-3.2. Configuration Management - defaults.ts & live reloads (logo, icon, theme changes)  
-3.3. UI Guidelines - Use UIKit components (shadcn/ui), semantic colors, existing wrappers
+- [3.1. Feature Module System - Create custom features from scratch](#31-feature-module-system---create-custom-features-from-scratch)
+- [3.2. Configuration Management - defaults.ts & live reloads (logo, icon, theme changes)](#32-configuration-management---defaultsts--live-reloads-logo-icon-theme-changes)
+- [3.3. UI Guidelines - Use UIKit components (shadcn/ui), semantic colors, existing wrappers](#33-ui-guidelines---use-uikit-components-shadcnui-semantic-colors-existing-wrappers)
 
 ### 4. Platform Integration
 
-4.1. Platform APIs - Complete storage, messaging, CORS-free API reference  
-4.2. Cross-Browser Support - Chrome, Firefox, Edge compatibility  
-4.3. Extension Lifecycle - Install, update, permissions
+- [4.1. Platform APIs - Complete storage, messaging, CORS-free API reference](#41-platform-apis---complete-storage-messaging-cors-free-api-reference)
+- [4.2. Cross-Browser Support - Chrome, Firefox, Edge compatibility](#42-cross-browser-support---chrome-firefox-edge-compatibility)
+- [4.3. Extension Lifecycle - Install, update, permissions](#43-extension-lifecycle---install-update-permissions)
 
 ### 5. Production & AI
 
-5.1. Build & Deploy - Production builds, store submission  
-5.2. LLM Development Guide - AI-assisted coding patterns  
-5.3. API Reference - Complete function signatures
+- [5.1. Build & Deploy - Production builds, store submission](#51-build--deploy---production-builds-store-submission)
+- [5.2. LLM Development Guide - AI-assisted coding patterns](#52-llm-development-guide---ai-assisted-coding-patterns)
+- [5.3. API Reference - Complete function signatures](#53-api-reference---complete-function-signatures)
 
 ---
 
