@@ -4836,7 +4836,7 @@ Good documentation is critical for team understanding, maintenance, and onboardi
 
 **Intermediate Level:**
 
-- [`src/features/quote-generator/README.md`](src/features/quote-generator/README.md) - API integration, settings schema, fallback strategies
+- [`src/features/_quote-generator/README.md`](src/features/_quote-generator/README.md) - API integration, settings schema, fallback strategies
 
 **Advanced Level:**
 
