@@ -82,10 +82,9 @@ export function useQuoteGenerator() {
 async function getGeneralQuote(): Promise<Quote> {
   try {
     const response = await comet.get('https://api.adviceslip.com/advice');
-
-    if (response.ok && response.data?.data?.slip?.advice) {
+    if (response.ok && response.data?.slip?.advice) {
       return {
-        text: response.data.data.slip.advice,
+        text: response.data.slip.advice,
         author: 'Anonymous',
         category: 'advice',
         source: 'api',

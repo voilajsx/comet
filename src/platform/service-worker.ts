@@ -216,162 +216,111 @@ class CometServiceWorkerManager {
   /**
    * Proper Universal API fetch handler with CORS and detailed logging
    */
-  async universalApiFetch({
-    url,
-    method = 'GET',
-    headers = {},
-    body = null,
-    timeout = 15000,
-  }: FetchRequestData): Promise<FetchResponse> {
-    console.log(`[API] 🚀 Starting ${method} ${url}`);
-    console.log(`[API] 📋 Headers:`, headers);
-    console.log(`[API] 📦 Body:`, body);
+ async universalApiFetch({
+  url,
+  method = 'GET',
+  headers = {},
+  body = null,
+  timeout = 15000,
+}: FetchRequestData): Promise<FetchResponse> {
+  console.log(`[API] 🚀 Starting ${method} ${url}`);
 
-    let controller: AbortController | null = null;
-    let timeoutId: number | null = null;
+  let controller: AbortController | null = null;
+  let timeoutId: number | null = null;
 
-    try {
-      // Create abort controller for timeout
-      controller = new AbortController();
+  try {
+    controller = new AbortController();
+    
+    timeoutId = setTimeout(() => {
+      console.log(`[API] ⏰ Request timeout after ${timeout}ms`);
+      controller!.abort();
+    }, timeout);
 
-      // Set up timeout
-      timeoutId = setTimeout(() => {
-        console.log(`[API] ⏰ Request timeout after ${timeout}ms`);
-        controller!.abort();
-      }, timeout);
+    const fetchOptions: RequestInit = {
+      method: method.toUpperCase(),
+      headers: {
+        Accept: 'application/json, text/plain, */*',
+        'Cache-Control': 'no-cache',
+        ...(body && ['POST', 'PUT', 'PATCH'].includes(method.toUpperCase())
+          ? { 'Content-Type': 'application/json' }
+          : {}),
+        ...headers,
+      },
+      signal: controller.signal,
+      mode: 'cors',
+      credentials: 'omit',
+      redirect: 'follow',
+    };
 
-      // CORS-friendly headers
-      const fetchOptions: RequestInit = {
-        method: method.toUpperCase(),
-        headers: {
-          // Essential headers for CORS
-          Accept: 'application/json, text/plain, */*',
-          'Cache-Control': 'no-cache',
-
-          // Only add Content-Type for body requests to avoid preflight
-          ...(body && ['POST', 'PUT', 'PATCH'].includes(method.toUpperCase())
-            ? { 'Content-Type': 'application/json' }
-            : {}),
-
-          // User provided headers (can override defaults)
-          ...headers,
-        },
-        signal: controller.signal,
-        mode: 'cors',
-        credentials: 'omit', // No credentials to avoid preflight
-        redirect: 'follow',
-      };
-
-      // Add body for POST/PUT/PATCH
-      if (body && ['POST', 'PUT', 'PATCH'].includes(method.toUpperCase())) {
-        fetchOptions.body = typeof body === 'string' ? body : JSON.stringify(body);
-      }
-
-      console.log(`[API] 🔧 Fetch options:`, fetchOptions);
-
-      // Make the request
-      const response = await fetch(url, fetchOptions);
-
-      // Clear timeout on success
-      if (timeoutId) {
-        clearTimeout(timeoutId);
-        timeoutId = null;
-      }
-
-      console.log(`[API] 📡 Response received:`);
-      console.log(`[API] 📊 Status: ${response.status} ${response.statusText}`);
-      console.log(
-        `[API] 📋 Response Headers:`,
-        Object.fromEntries(response.headers.entries())
-      );
-      console.log(`[API] ✅ OK: ${response.ok}`);
-
-      // Read response
-      const text = await response.text();
-      console.log(`[API] 📖 Response body length: ${text.length} characters`);
-      console.log(
-        `[API] 📄 Response preview (first 200 chars):`,
-        text.substring(0, 200)
-      );
-
-      // Try to parse as JSON
-      let data: any = text;
-      try {
-        data = JSON.parse(text);
-        console.log(`[API] 🎯 Successfully parsed as JSON`);
-        console.log(
-          `[API] 📊 JSON structure:`,
-          typeof data,
-          Array.isArray(data) ? `Array[${data.length}]` : 'Object'
-        );
-
-        // Log first level keys if it's an object
-        if (typeof data === 'object' && data !== null && !Array.isArray(data)) {
-          console.log(`[API] 🔑 Object keys:`, Object.keys(data));
-        }
-      } catch (parseError: unknown) {
-        console.log(
-          `[API] 📝 Keeping as text (not valid JSON):`,
-          parseError instanceof Error ? parseError.message : String(parseError)
-        );
-      }
-
-      const result: FetchResponse = {
-        success: response.ok,
-        status: response.status,
-        statusText: response.statusText,
-        data: data,
-        headers: Object.fromEntries(response.headers.entries()),
-      };
-
-      console.log(`[API] ✅ Final result:`, {
-        success: result.success,
-        status: result.status,
-        dataType: typeof result.data,
-        hasData: !!result.data,
-      });
-
-      return result;
-    } catch (error: unknown) {
-      // Clean up timeout
-      if (timeoutId) clearTimeout(timeoutId);
-
-      console.error(`[API] ❌ Error occurred:`, error);
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      const errorName = error instanceof Error ? error.name : 'Unknown';
-      console.error(`[API] 📛 Error name: ${errorName}`);
-      console.error(`[API] 📛 Error message: ${errorMessage}`);
-
-      // Determine error type
-      const isTimeout = errorName === 'AbortError';
-      const isNetworkError =
-        errorMessage.includes('fetch') ||
-        errorMessage.includes('Failed to fetch');
-      const isCorsError =
-        errorMessage.includes('CORS') ||
-        errorMessage.includes('cross-origin');
-
-      console.log(`[API] 🔍 Error analysis:`);
-      console.log(`[API] ⏰ Is timeout: ${isTimeout}`);
-      console.log(`[API] 🌐 Is network error: ${isNetworkError}`);
-      console.log(`[API] 🚫 Is CORS error: ${isCorsError}`);
-
-      const result: FetchResponse = {
-        success: false,
-        error: errorMessage,
-        isTimeout,
-        isNetworkError,
-        isCorsError,
-        status: 0,
-        statusText: '',
-        data: null,
-        headers: {},
-      };
-
-      console.log(`[API] ❌ Error result:`, result);
-      return result;
+    if (body && ['POST', 'PUT', 'PATCH'].includes(method.toUpperCase())) {
+      fetchOptions.body = typeof body === 'string' ? body : JSON.stringify(body);
     }
+
+    const response = await fetch(url, fetchOptions);
+
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+      timeoutId = null;
+    }
+
+    console.log(`[API] 📡 Response: ${response.status} ${response.statusText}`);
+
+    // Read response text
+    const text = await response.text();
+    console.log(`[API] 📖 Response length: ${text.length} characters`);
+
+    // Try to parse as JSON
+    let data: any = text;
+    try {
+      data = JSON.parse(text);
+      console.log(`[API] 🎯 Successfully parsed as JSON`);
+    } catch (parseError) {
+      console.log(`[API] 📝 Keeping as text (not valid JSON)`);
+    }
+
+    // 🔧 FIXED: Return clean structure - remove the extra wrapper
+    const result: FetchResponse = {
+      success: response.ok,
+      status: response.status,
+      statusText: response.statusText,
+      data: data, // ← Direct data, no extra wrapper
+      headers: Object.fromEntries(response.headers.entries()),
+    };
+
+    console.log(`[API] ✅ Clean result:`, {
+      success: result.success,
+      status: result.status,
+      dataType: typeof result.data,
+    });
+
+    return result;
+  } catch (error: unknown) {
+    if (timeoutId) clearTimeout(timeoutId);
+
+    console.error(`[API] ❌ Error:`, error);
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    const errorName = error instanceof Error ? error.name : 'Unknown';
+
+    const isTimeout = errorName === 'AbortError';
+    const isNetworkError = errorMessage.includes('fetch') || errorMessage.includes('Failed to fetch');
+    const isCorsError = errorMessage.includes('CORS') || errorMessage.includes('cross-origin');
+
+    const result: FetchResponse = {
+      success: false,
+      error: errorMessage,
+      isTimeout,
+      isNetworkError,
+      isCorsError,
+      status: 0,
+      statusText: '',
+      data: null,
+      headers: {},
+    };
+
+    console.log(`[API] ❌ Error result:`, result);
+    return result;
   }
+}
 
   async handleInstallation(details: InstallDetails): Promise<void> {
     console.log(`[Comet Platform] Installation event: ${details.reason}`);
