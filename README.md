@@ -68,6 +68,11 @@ Teams needing consistent extension quality, organizations building multiple brow
 - [5.2. LLM Development Guide - AI-assisted coding patterns](#52-llm-development-guide---ai-assisted-coding-patterns)
 - [5.3. API Reference - Complete function signatures](#53-api-reference---complete-function-signatures)
 
+### 6. Documentation Guidelines
+
+- [6.1. General Guidelines - Writing standards for internal documentation](#61-general-guidelines---writing-standards-for-internal-documentation)
+- [6.2. Sample Documentation - Reference examples for feature modules](#62-sample-documentation---reference-examples-for-feature-modules)
+
 ---
 
 # 1. Getting Started
@@ -4788,6 +4793,63 @@ if (!response.ok) {
 ```
 
 This API reference provides complete type information and usage patterns for all Comet platform APIs, ensuring developers have comprehensive documentation for building features efficiently.
+
+# 6. Documentation Guidelines
+
+Good documentation is critical for team understanding, maintenance, and onboarding new developers. A clear, consistent structure makes it easy for anyone to understand how features work, what patterns to follow, and how to troubleshoot issues. Well-documented modules serve as both reference and teaching tools for the entire team.
+
+---
+
+## 6.1. General Guidelines - Writing Standards for Internal Documentation
+
+### Essential Documentation Principles
+
+**✅ Key Requirements:**
+
+- **Purpose first** - Clearly state what the module does and who should use it
+- **Show, don't tell** - Include working code examples that can be copied
+- **Structure consistently** - Use the same section headings across all modules
+- **Focus on patterns** - Explain the "how" and "why" behind implementation choices
+- **Include troubleshooting** - Common issues and debug steps
+- **Team context** - Notes for new developers and code review guidance
+
+**📝 Required Sections:**
+
+- Purpose & Scope
+- Module Structure
+- Component Architecture
+- Key Patterns Demonstrated
+- Team Development Notes
+- Testing & Debugging
+
+---
+
+## 6.2. Sample Documentation - Reference Examples for Feature Modules
+
+### Reference Documentation
+
+**📖 Read these examples and follow similar patterns:**
+
+**Foundation Level:**
+
+- [`src/features/hello-world/README.md`](src/features/hello-world/README.md) - Minimal template, storage patterns, onboarding reference
+
+**Intermediate Level:**
+
+- [`src/features/quote-generator/README.md`](src/features/quote-generator/README.md) - API integration, settings schema, fallback strategies
+
+**Advanced Level:**
+
+- [`src/features/page-analyzer/README.md`](src/features/page-analyzer/README.md) - Full platform integration, content scripts, complex workflows
+
+### Usage Instructions
+
+1. **Choose the closest example** based on your module's complexity
+2. **Copy the structure** - Use the same section headings and flow
+3. **Adapt the content** - Replace examples with your module's patterns
+4. **Focus on teaching** - Help other developers understand your implementation choices
+
+**💡 Tip:** Start with the Hello World example for simple modules, then reference others for specific patterns you need to document.
 
 ## Conclusion
 
