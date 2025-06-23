@@ -87,20 +87,19 @@ export interface ModuleConfig {
 
 export { default as helloWorld } from './hello-world/index.js';
 export { default as pageAnalyzer } from './page-analyzer/index.js';
-export { default as quoteGenerator } from './quote-generator/index.js';
 
 // ============================================================================
 // 💤 DISABLED FEATURES (underscore prefix)
 // To enable any feature: Remove underscore from folder name
 // ============================================================================
+// _quote-generator (disabled - remove underscore to enable)
 
 
-// No disabled features
 
 // ============================================================================
-// Total features: 3
-// Disabled features: 0
-// Last generated: 2025-06-23T01:21:10.776Z
+// Total features: 2
+// Disabled features: 1
+// Last generated: 2025-06-23T02:06:52.951Z
 // 
 // 🚀 Quick Commands:
 // Enable feature:  mv src/features/_feature-name src/features/feature-name
